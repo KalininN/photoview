@@ -69,5 +69,12 @@ func SaveEXIF(tx *gorm.DB, media *models.Media) (*models.MediaEXIF, error) {
 		}
 	}
 
+	if exif.Rating != nil && *exif.Rating != media.Rating {
+		media.Rating = *exif.Rating
+		if err := tx.Save(media).Error; err != nil {
+			return nil, errors.Wrap(err, "update media rating")
+		}
+	}
+
 	return exif, nil
 }

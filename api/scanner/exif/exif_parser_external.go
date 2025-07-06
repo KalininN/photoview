@@ -99,6 +99,7 @@ func (p *externalExifParser) ParseExif(mediaPath string) (returnExif *models.Med
 			return nil, err
 		}
 	}
+	log.Printf("Calling external ExifTool on %s\n", mediaPath)
 
 	fileInfo, err := p.dataLoader.Load(mediaPath)
 	if err != nil {
@@ -211,6 +212,13 @@ func (p *externalExifParser) ParseExif(mediaPath string) (returnExif *models.Med
 	newExif.GPSLatitude, newExif.GPSLongitude = extractValidGpsData(&fileInfo, mediaPath)
 	if (newExif.GPSLatitude != nil) && (newExif.GPSLongitude != nil) {
 		foundExif = true
+	}
+
+	// Get rating
+	rating, err := fileInfo.GetInt("Rating")
+	if err == nil {
+		foundExif = true
+		newExif.Rating = &rating
 	}
 
 	if !foundExif {

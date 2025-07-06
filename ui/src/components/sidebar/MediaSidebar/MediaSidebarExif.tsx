@@ -131,6 +131,7 @@ const exifNameLookup = (t: TranslationFn): { [key: string]: string } => ({
   iso: t('sidebar.media.exif.name.iso', 'ISO'),
   focalLength: t('sidebar.media.exif.name.focal_length', 'Focal length'),
   flash: t('sidebar.media.exif.name.flash', 'Flash'),
+  rating: t('sidebar.media.exif.name.rating', 'Rating'),
   coordinates: t('sidebar.media.exif.name.coordinates', 'Coordinates'),
 })
 

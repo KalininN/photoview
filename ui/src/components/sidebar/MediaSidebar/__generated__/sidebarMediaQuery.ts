@@ -130,6 +130,10 @@ export interface sidebarMediaQuery_media_exif {
    * GPS coordinates of where the image was taken
    */
   coordinates: sidebarMediaQuery_media_exif_coordinates | null;
+  /**
+   * Manually assigned user rating
+   */
+  rating: number | null;
 }
 
 export interface sidebarMediaQuery_media_album_path {

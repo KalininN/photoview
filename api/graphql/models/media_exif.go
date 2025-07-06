@@ -20,6 +20,7 @@ type MediaEXIF struct {
 	ExposureProgram *int64
 	GPSLatitude     *float64
 	GPSLongitude    *float64
+	Rating		    *int64
 }
 
 func (MediaEXIF) TableName() string {

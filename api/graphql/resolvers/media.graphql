@@ -55,6 +55,8 @@ type MediaEXIF {
   exposureProgram: Int
   "GPS coordinates of where the image was taken"
   coordinates: Coordinates
+  "Manually assigned user rating"
+  rating: Int
 }
 
 "Metadata specific to video media"
@@ -100,6 +102,9 @@ type Media {
 
   "A list of faces present on the image"
   faces: [ImageFace!]!
+
+  "Manually assigned user rating"
+  rating: Int
 }
 
 extend type Query {
