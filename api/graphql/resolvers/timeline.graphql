@@ -5,6 +5,7 @@ extend type Query {
   myTimeline(
     paginate: Pagination,
     onlyFavorites: Boolean,
+    minRating: Int,
     "Only fetch media that is older than this date"
     fromDate: Time
   ): [Media!]! @isAuthorized

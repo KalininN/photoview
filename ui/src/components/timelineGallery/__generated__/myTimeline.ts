@@ -96,6 +96,7 @@ export interface myTimeline {
 
 export interface myTimelineVariables {
   onlyFavorites?: boolean | null;
+  minRating?: number | null;
   limit?: number | null;
   offset?: number | null;
   fromDate?: Time | null;

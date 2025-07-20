@@ -33,6 +33,7 @@ export const ALBUM_GALLERY_FRAGMENT = gql`
       paginate: { limit: $limit, offset: $offset }
       order: { order_by: $mediaOrderBy, order_direction: $orderDirection }
       onlyFavorites: $onlyFavorites
+      minRating: $minRating
     ) {
       ...MediaGalleryFields
     }
@@ -49,6 +50,8 @@ type AlbumGalleryProps = {
   ordering?: MediaOrdering
   onlyFavorites?: boolean
   onFavorite?(): void
+  minRating?: number
+  setMinRating?(rating: number): void
 }
 
 const AlbumGallery = React.forwardRef(
@@ -62,6 +65,8 @@ const AlbumGallery = React.forwardRef(
       setOrdering,
       ordering,
       onlyFavorites = false,
+      minRating,
+      setMinRating,
     }: AlbumGalleryProps,
     ref: React.ForwardedRef<HTMLDivElement>
   ) => {
@@ -107,6 +112,8 @@ const AlbumGallery = React.forwardRef(
             setOnlyFavorites={setOnlyFavorites}
             setOrdering={setOrdering}
             ordering={ordering}
+            minRating={minRating}
+            setMinRating={setMinRating}
           />
         )}
         <AlbumTitle album={album} disableLink />

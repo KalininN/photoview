@@ -114,11 +114,59 @@ const SortingOptions = ({ setOrdering, ordering }: SortingOptionsProps) => {
   )
 }
 
+// RatingOptions dropdown for filtering by rating
+export type RatingDropdownProps = {
+  minRating?: number
+  setMinRating?: (rating: number) => void
+}
+
+export const RatingDropdown = ({ minRating: ratingFilter, setMinRating: setRatingFilter }: RatingDropdownProps) => {
+  const { t } = useTranslation()
+
+  const ratingOptions = [
+    {
+      value: '5',
+      label: t('album_filter.rating_options.5', '5'),
+    },
+    {
+      value: '4',
+      label: t('album_filter.rating_options.at_least_4', 'at least 4'),
+    },
+    {
+      value: '3',
+      label: t('album_filter.rating_options.at_least_3', 'at least 3'),
+    },
+  ]
+
+  const handleChange = (value: string) => {
+    if (setRatingFilter) {
+      setRatingFilter(parseInt(value, 10))
+    }
+  }
+
+  return (
+    <fieldset>
+      <legend id="filter_group_rating-label" className="inline-block mb-1">
+        <span>{t('album_filter.rating', 'Rating')}</span>
+      </legend>
+      <Dropdown
+        aria-labelledby="filter_group_rating-label"
+        setSelected={handleChange}
+        value={ratingFilter?.toString() || undefined}
+        items={ratingOptions}
+        placeholder={t('album_filter.rating_options.placeholder', 'Select rating')}
+      />
+    </fieldset>
+  )
+}
+
 type AlbumFilterProps = {
   onlyFavorites: boolean
   setOnlyFavorites?(favorites: boolean): void
   ordering?: MediaOrdering
   setOrdering?: SetOrderingFn
+  minRating?: number
+  setMinRating?(rating: number): void
 }
 
 const AlbumFilter = ({
@@ -126,10 +174,13 @@ const AlbumFilter = ({
   setOnlyFavorites,
   setOrdering,
   ordering,
+  minRating,
+  setMinRating,
 }: AlbumFilterProps) => {
   return (
     <div className="flex items-end gap-4 flex-wrap mb-4">
       <SortingOptions ordering={ordering} setOrdering={setOrdering} />
+      <RatingDropdown minRating={minRating} setMinRating={setMinRating} />
       {authToken() && setOnlyFavorites && (
         <FavoritesCheckbox
           onlyFavorites={onlyFavorites}

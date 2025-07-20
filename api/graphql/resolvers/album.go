@@ -17,7 +17,7 @@ import (
 )
 
 // Media is the resolver for the media field.
-func (r *albumResolver) Media(ctx context.Context, obj *models.Album, order *models.Ordering, paginate *models.Pagination, onlyFavorites *bool) ([]*models.Media, error) {
+func (r *albumResolver) Media(ctx context.Context, obj *models.Album, order *models.Ordering, paginate *models.Pagination, onlyFavorites *bool, minRating *int) ([]*models.Media, error) {
 	db := r.DB(ctx)
 
 	query := db.
@@ -37,6 +37,10 @@ func (r *albumResolver) Media(ctx context.Context, obj *models.Album, order *mod
 		}).Where("user_media_data.media_id = media.id").Where("user_media_data.favorite = true")
 
 		query = query.Where("EXISTS (?)", favoriteQuery)
+	}
+
+	if minRating != nil {
+		query = query.Where("media.rating >= ?", *minRating)
 	}
 
 	query = models.FormatSQL(query, order, paginate)

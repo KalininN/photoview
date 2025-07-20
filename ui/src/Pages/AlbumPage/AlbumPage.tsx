@@ -23,6 +23,7 @@ const ALBUM_QUERY = gql`
     $orderDirection: OrderDirection
     $limit: Int
     $offset: Int
+    $minRating: Int
   ) {
     album(id: $id) {
       ...AlbumGalleryFields
@@ -47,6 +48,11 @@ function AlbumPage() {
   const setOnlyFavorites = (favorites: boolean) =>
     urlParams.setParam('favorites', favorites ? '1' : '0')
 
+  const minRatingParam = urlParams.getParam('minRating')
+  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 3
+  const setMinRating = (rating: number) =>
+    urlParams.setParam('minRating', rating.toString())
+
   const { loading, error, data, refetch, fetchMore } = useQuery<
     albumQuery,
     albumQueryVariables
@@ -58,6 +64,7 @@ function AlbumPage() {
       orderDirection: orderParams.orderDirection,
       offset: 0,
       limit: 200,
+      minRating,
     },
   })
 
@@ -90,6 +97,17 @@ function AlbumPage() {
     [setOnlyFavorites, refetch]
   )
 
+  const toggleMinRating = useCallback(
+    (rating: number) => {
+      setMinRating(rating)
+      refetch({
+        id: albumId,
+        minRating: rating,
+      })
+    },
+    [setMinRating, refetch]
+  )
+
   if (error) return <div>Error</div>
 
   return (
@@ -108,6 +126,8 @@ function AlbumPage() {
         showFilter
         setOrdering={orderParams.setOrdering}
         ordering={orderParams}
+        minRating={minRating}
+        setMinRating={toggleMinRating}
       />
       <PaginateLoader
         active={!finishedLoadingMore && !loading}

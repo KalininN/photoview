@@ -22,12 +22,14 @@ import client from '../../apolloClient'
 export const MY_TIMELINE_QUERY = gql`
   query myTimeline(
     $onlyFavorites: Boolean
+    $minRating: Int
     $limit: Int
     $offset: Int
     $fromDate: Time
   ) {
     myTimeline(
       onlyFavorites: $onlyFavorites
+      minRating: $minRating
       fromDate: $fromDate
       paginate: { limit: $limit, offset: $offset }
     ) {
@@ -83,6 +85,11 @@ const TimelineGallery = () => {
   const setOnlyFavorites = (favorites: boolean) =>
     setParam('favorites', favorites ? '1' : null)
 
+  const minRatingParam = getParam('minRating')
+  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 3
+  const setMinRating = (rating: number) =>
+    setParam('minRating', rating.toString())
+
   const filterDate = getParam('date')
   const setFilterDate = (x: string) => setParam('date', x)
 
@@ -104,6 +111,7 @@ const TimelineGallery = () => {
   >(MY_TIMELINE_QUERY, {
     variables: {
       onlyFavorites,
+      minRating,
       fromDate: filterDate
         ? `${parseInt(filterDate) + 1}-01-01T00:00:00Z`
         : undefined,
@@ -132,6 +140,7 @@ const TimelineGallery = () => {
       await client.resetStore()
       await refetch({
         onlyFavorites,
+        minRating,
         fromDate: filterDate
           ? `${parseInt(filterDate) + 1}-01-01T00:00:00Z`
           : undefined,
@@ -178,6 +187,8 @@ const TimelineGallery = () => {
         setOnlyFavorites={setOnlyFavorites}
         filterDate={filterDate}
         setFilterDate={setFilterDate}
+        minRating={minRating}
+        setMinRating={setMinRating}
       />
       <div className="-mx-3 flex flex-wrap" ref={containerElem}>
         {timelineGroups}
