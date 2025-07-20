@@ -167,6 +167,12 @@ const TimelineGallery = () => {
     })
   }, [onlyFavorites])
 
+  useEffect(() => {
+    refetch({
+      minRating: minRating,
+    })
+  }, [minRating])
+
   if (error) {
     return <div>{error.message}</div>
   }
