@@ -1,19 +1,15 @@
 package executable_worker
 
 import (
-	"flag"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+
+	_ "github.com/photoview/photoview/api/test_utils/flags"
 )
 
 const testdataBinPath = "./test_data/mock_bin"
-
-func init() {
-	// Avoid panic with providing flags in `test_utils/integration_setup.go`.
-	flag.CommandLine.Init("executable_worker", flag.ContinueOnError)
-}
 
 // SetPathWithCurrent sets PATH env to `paths` in the directory of testing files. The PATH will restore to the previous value when the test is done.
 func SetPathWithCurrent(t *testing.T, paths ...string) {
@@ -34,6 +30,8 @@ func SetPathWithCurrent(t *testing.T, paths ...string) {
 
 func TestInitFfprobePath(t *testing.T) {
 	t.Run("PathFail", func(t *testing.T) {
+		SetPathWithCurrent(t, "non_exist_path")
+
 		err := SetFfprobePath()
 		if err == nil {
 			t.Fatalf("InitFfprobePath() returns nil, want an error")
