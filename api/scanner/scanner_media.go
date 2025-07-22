@@ -30,8 +30,13 @@ func ScanMedia(tx *gorm.DB, mediaPath string, albumId int, cache *scanner_cache.
 		}
 
 		if result.RowsAffected > 0 {
-			// log.Printf("Media already scanned: %s\n", mediaPath)
-			return media[0], false, nil
+			log.Printf("Media already scanned: %s\n", mediaPath)
+			stat, err := os.Stat(mediaPath)
+			if err != nil {
+				return nil, false, err
+			}
+			log.Printf("Media %s already exists in database, needs to be updated\n", mediaPath)
+			return media[0], stat.ModTime().After(media[0].UpdatedAt), nil
 		}
 	}
 
