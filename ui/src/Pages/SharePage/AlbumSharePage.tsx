@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import Layout from '../../components/layout/Layout'
 import AlbumGallery from '../../components/albumGallery/AlbumGallery'
 import styled from 'styled-components'
@@ -19,6 +19,7 @@ export const SHARE_ALBUM_QUERY = gql`
     $mediaOrderDirection: OrderDirection
     $limit: Int
     $offset: Int
+    $minRating: Int
   ) {
     album(id: $id, tokenCredentials: { token: $token, password: $password }) {
       id
@@ -39,6 +40,7 @@ export const SHARE_ALBUM_QUERY = gql`
           order_by: $mediaOrderBy
           order_direction: $mediaOrderDirection
         }
+        minRating: $minRating
       ) {
         id
         title
@@ -105,7 +107,12 @@ const AlbumSharePage = ({ albumID, token, password }: AlbumSharePageProps) => {
   const urlParams = useURLParameters()
   const orderParams = useOrderingParams(urlParams)
 
-  const { data, error, loading, fetchMore } = useQuery<shareAlbumQuery>(
+  const minRatingParam = urlParams.getParam('minRating')
+  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 5
+  const setMinRating = (rating: number) =>
+    urlParams.setParam('minRating', rating.toString())
+
+  const { data, error, loading, refetch, fetchMore } = useQuery<shareAlbumQuery>(
     SHARE_ALBUM_QUERY,
     {
       variables: {
@@ -116,6 +123,7 @@ const AlbumSharePage = ({ albumID, token, password }: AlbumSharePageProps) => {
         offset: 0,
         mediaOrderBy: orderParams.orderBy,
         mediaOrderDirection: orderParams.orderDirection,
+        minRating
       },
     }
   )
@@ -127,6 +135,12 @@ const AlbumSharePage = ({ albumID, token, password }: AlbumSharePageProps) => {
       data,
       getItems: data => data.album.media,
     })
+
+  useEffect(() => {
+    refetch({
+      minRating: minRating,
+    })
+  }, [minRating])
 
   if (error) {
     return <div>{error.message}</div>
@@ -148,6 +162,8 @@ const AlbumSharePage = ({ albumID, token, password }: AlbumSharePageProps) => {
           showFilter
           setOrdering={orderParams.setOrdering}
           ordering={orderParams}
+          minRating={minRating}
+          setMinRating={setMinRating}
         />
         <PaginateLoader
           active={!finishedLoadingMore && !loading}
