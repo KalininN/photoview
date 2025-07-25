@@ -49,7 +49,7 @@ function AlbumPage() {
     urlParams.setParam('favorites', favorites ? '1' : '0')
 
   const minRatingParam = urlParams.getParam('minRating')
-  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 3
+  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 5
   const setMinRating = (rating: number) =>
     urlParams.setParam('minRating', rating.toString())
 

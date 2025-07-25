@@ -86,7 +86,7 @@ const TimelineGallery = () => {
     setParam('favorites', favorites ? '1' : null)
 
   const minRatingParam = getParam('minRating')
-  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 3
+  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 5
   const setMinRating = (rating: number) =>
     setParam('minRating', rating.toString())
 
