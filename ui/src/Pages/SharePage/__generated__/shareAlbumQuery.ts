@@ -225,4 +225,5 @@ export interface shareAlbumQueryVariables {
   mediaOrderDirection?: OrderDirection | null;
   limit?: number | null;
   offset?: number | null;
+  minRating?: number | null;
 }
