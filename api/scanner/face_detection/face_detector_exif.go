@@ -91,6 +91,11 @@ func (fd *faceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
 		return err
 	}
 
+	log.Printf("Removing saved faces in %s", media.Path)
+	if err := db.Where("media_id = ?", media.ID).Delete(&models.ImageFace{}).Error; err != nil {
+		return err
+	}
+
 	log.Printf("Looking for EXIF faces in %s", media.Path)
 
 	fileInfo, err := fd.dataLoader.Load(media.Path)
