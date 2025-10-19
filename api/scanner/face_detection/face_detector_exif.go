@@ -5,6 +5,7 @@ package face_detection
 import (
 	"errors"
 	"log"
+	"strings"
 
 	"github.com/barasher/go-exiftool"
 	"github.com/photoview/photoview/api/dataloader"
@@ -153,8 +154,9 @@ func (fd *faceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
 		if err := db.First(&faceGroup, "label = ?", face.Name).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				faceGroup = models.FaceGroup{
-					Label:      &face.Name,
-					ImageFaces: []models.ImageFace{imageFace},
+					Label:        &face.Name,
+					DisplayLabel: &(strings.Split(face.Name, " ")[0]),
+					ImageFaces:   []models.ImageFace{imageFace},
 				}
 				if err := db.Create(&faceGroup).Error; err != nil {
 					return err
@@ -162,9 +164,10 @@ func (fd *faceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
 			} else {
 				return err
 			}
-		}
-		if err := db.Model(&faceGroup).Association("ImageFaces").Append(&imageFace); err != nil {
-			return err
+		} else {
+			if err := db.Model(&faceGroup).Association("ImageFaces").Append(&imageFace); err != nil {
+				return err
+			}
 		}
 	}
 
