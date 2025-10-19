@@ -19,13 +19,13 @@ import MoveImageFacesModal from '../../../Pages/PeoplePage/SingleFaceGroup/MoveI
 import { FaceDetails } from '../../../Pages/PeoplePage/PeoplePage'
 
 type PersonMoreMenuItemProps = {
-  label: string
+  displayLabel: string
   className?: string
   onClick(): void
 }
 
 const PersonMoreMenuItem = ({
-  label,
+  displayLabel,
   className,
   onClick,
 }: PersonMoreMenuItemProps) => {
@@ -41,7 +41,7 @@ const PersonMoreMenuItem = ({
             className
           )}
         >
-          {label}
+          {displayLabel}
         </button>
       )}
     </Menu.Item>
@@ -129,26 +129,26 @@ const PersonMoreMenu = ({
             <PersonMoreMenuItem
               onClick={() => setChangeLabel(true)}
               className="border-b"
-              label={t('people_page.action_label.change_label', 'Change label')}
+              displayLabel={t('people_page.action_label.change_label', 'Change label')}
             />
             <PersonMoreMenuItem
               onClick={() =>
                 setMergeModalState(MergeFaceGroupsModalState.SelectDestination)
               }
               className="border-b"
-              label={t('sidebar.people.action_label.merge_face', 'Merge face')}
+              displayLabel={t('sidebar.people.action_label.merge_face', 'Merge face')}
             />
             <PersonMoreMenuItem
               onClick={() => detachImageFace()}
               className="border-b"
-              label={t(
+              displayLabel={t(
                 'sidebar.people.action_label.detach_image',
                 'Detach image'
               )}
             />
             <PersonMoreMenuItem
               onClick={() => setMoveModalOpen(true)}
-              label={t('sidebar.people.action_label.move_face', 'Move face')}
+              displayLabel={t('sidebar.people.action_label.move_face', 'Move face')}
             />
           </ArrowPopoverPanel>
         </Menu.Items>

@@ -116,7 +116,7 @@ func (r *imageFaceResolver) FaceGroup(ctx context.Context, obj *models.ImageFace
 }
 
 // SetFaceGroupLabel is the resolver for the setFaceGroupLabel field.
-func (r *mutationResolver) SetFaceGroupLabel(ctx context.Context, faceGroupID int, label *string) (*models.FaceGroup, error) {
+func (r *mutationResolver) SetFaceGroupLabel(ctx context.Context, faceGroupID int, displayLabel *string) (*models.FaceGroup, error) {
 	db := r.DB(ctx)
 	user := auth.UserFromContext(ctx)
 	if user == nil {
@@ -132,7 +132,7 @@ func (r *mutationResolver) SetFaceGroupLabel(ctx context.Context, faceGroupID in
 		return nil, err
 	}
 
-	if err := db.Model(faceGroup).Update("label", label).Error; err != nil {
+	if err := db.Model(faceGroup).Update("display_label", displayLabel).Error; err != nil {
 		return nil, err
 	}
 

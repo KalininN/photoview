@@ -16,6 +16,7 @@ export const SINGLE_FACE_GROUP = gql`
     faceGroup(id: $id) {
       id
       label
+      displayLabel
       imageFaces(paginate: { limit: $limit, offset: $offset }) {
         id
         rectangle {

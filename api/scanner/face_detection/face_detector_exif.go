@@ -143,10 +143,10 @@ func (fd *faceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
 			MediaID: media.ID,
 			// Descriptor: models.FaceDescriptor(face.Descriptor), --- IGNORE ---
 			Rectangle: models.FaceRectangle{
-				MinX: face.X,
-				MaxX: face.X + face.Width,
-				MinY: face.Y,
-				MaxY: face.Y + face.Height,
+				MinX: face.X - face.Width/2,
+				MaxX: face.X + face.Width/2,
+				MinY: face.Y - face.Height/2,
+				MaxY: face.Y + face.Height/2,
 			},
 		}
 		var faceGroup models.FaceGroup

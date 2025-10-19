@@ -30,6 +30,7 @@ export const MY_FACES_QUERY = gql`
     myFaceGroups(paginate: { limit: $limit, offset: $offset }) {
       id
       label
+      displayLabel
       imageFaceCount
       imageFaces(paginate: { limit: 1 }) {
         id
@@ -54,10 +55,10 @@ export const MY_FACES_QUERY = gql`
 `
 
 export const SET_GROUP_LABEL_MUTATION = gql`
-  mutation setGroupLabel($groupID: ID!, $label: String) {
-    setFaceGroupLabel(faceGroupID: $groupID, label: $label) {
+  mutation setGroupLabel($groupID: ID!, $displayLabel: String) {
+    setFaceGroupLabel(faceGroupID: $groupID, displayLabel: $displayLabel) {
       id
-      label
+      displayLabel
     }
   }
 `
@@ -106,7 +107,7 @@ type FaceDetailsProps = {
   group: {
     __typename: 'FaceGroup'
     id: string
-    label: string | null
+    displayLabel: string | null
     imageFaceCount: number
   }
   className?: string
@@ -123,7 +124,7 @@ export const FaceDetails = ({
   setEditLabel,
 }: FaceDetailsProps) => {
   const { t } = useTranslation()
-  const [inputValue, setInputValue] = useState(group.label ?? '')
+  const [inputValue, setInputValue] = useState(group.displayLabel ?? '')
   const inputRef = createRef<HTMLInputElement>()
 
   const [setGroupLabel, { loading }] = useMutation<
@@ -136,7 +137,7 @@ export const FaceDetails = ({
   })
 
   const resetLabel = () => {
-    setInputValue(group.label ?? '')
+    setInputValue(group.displayLabel ?? '')
     setEditLabel(false)
   }
 
@@ -165,19 +166,19 @@ export const FaceDetails = ({
           className,
           'whitespace-nowrap inline-block overflow-hidden overflow-clip'
         )}
-        labeled={!!group.label}
+        labeled={!!group.displayLabel}
         onClick={() => setEditLabel(true)}
       >
         <FaceImagesCount>{group.imageFaceCount}</FaceImagesCount>
         <button className="">
-          {group.label ?? t('people_page.face_group.unlabeled', 'Unlabeled')}
+          {group.displayLabel ?? t('people_page.face_group.unlabeled', 'Unlabeled')}
         </button>
         {/* <EditIcon name="pencil" /> */}
       </FaceDetailsWrapper>
     )
   } else {
     label = (
-      <FaceDetailsWrapper className={className} labeled={!!group.label}>
+      <FaceDetailsWrapper className={className} labeled={!!group.displayLabel}>
         <TextField
           className={textFieldClassName}
           loading={loading}
@@ -190,7 +191,7 @@ export const FaceDetails = ({
             setGroupLabel({
               variables: {
                 groupID: group.id,
-                label: inputValue == '' ? null : inputValue,
+                displayLabel: inputValue == '' ? null : inputValue,
               },
             })
           }

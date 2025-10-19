@@ -28,7 +28,7 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
   const { t } = useTranslation()
 
   const [editLabel, setEditLabel] = useState(false)
-  const [inputValue, setInputValue] = useState(faceGroup?.label ?? '')
+  const [inputValue, setInputValue] = useState(faceGroup?.displayLabel ?? '')
   const inputRef = createRef<HTMLInputElement>()
   const [mergeModalState, setMergeModalState] = useState(
     MergeFaceGroupsModalState.Closed
@@ -42,7 +42,7 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
   >(SET_GROUP_LABEL_MUTATION)
 
   const resetLabel = () => {
-    setInputValue(faceGroup?.label ?? '')
+    setInputValue(faceGroup?.displayLabel ?? '')
     setEditLabel(false)
   }
 
@@ -71,11 +71,12 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
       <>
         <h1
           className={`text-2xl font-semibold ${
-            faceGroup?.label ? '' : 'text-gray-600 dark:text-gray-400'
+            faceGroup?.displayLabel ? '' : 'text-gray-600 dark:text-gray-400'
           }`}
         >
-          {faceGroup?.label ??
-            t('people_page.face_group.unlabeled_person', 'Unlabeled person')}
+          {faceGroup?.displayLabel ?? (faceGroup?.label ??
+          t('people_page.face_group.unlabeled_person', 'Unlabeled person'))
+            }
         </h1>
       </>
     )
@@ -93,7 +94,7 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
             setGroupLabel({
               variables: {
                 groupID: faceGroup.id,
-                label: inputValue ? inputValue : null,
+                displayLabel: inputValue ? inputValue : null,
               },
             })
           }}

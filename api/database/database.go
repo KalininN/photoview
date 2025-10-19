@@ -201,6 +201,41 @@ func MigrateDatabase(db *gorm.DB) error {
 		db.Migrator().DropColumn(&models.SiteInfo{}, "thumbnail_method")
 	}
 
+	// Add rating column to media and media_exif tables
+	if !db.Migrator().HasColumn(&models.Media{}, "rating") {
+		if err := db.Migrator().AddColumn(&models.Media{}, "rating"); err != nil {
+			log.Printf("Failed to add rating column to media table: %v\n", err)
+		} else {
+			// Set default rating to 3 for all existing media
+			if err := db.Model(&models.Media{}).Where("rating IS NULL").Update("rating", 3).Error; err != nil {
+				log.Printf("Failed to set default rating for existing media: %v\n", err)
+			}
+		}
+	}
+
+	if !db.Migrator().HasColumn(&models.MediaEXIF{}, "rating") {
+		if err := db.Migrator().AddColumn(&models.MediaEXIF{}, "rating"); err != nil {
+			log.Printf("Failed to add rating column to media_exif table: %v\n", err)
+		} else {
+			// Set default rating to 3 for all existing media exif
+			if err := db.Model(&models.MediaEXIF{}).Where("rating IS NULL").Update("rating", 3).Error; err != nil {
+				log.Printf("Failed to set default rating for existing media exif: %v\n", err)
+			}
+		}
+	}
+
+	// Add display_label column to face_groups table
+	if !db.Migrator().HasColumn(&models.FaceGroup{}, "display_label") {
+		if err := db.Migrator().AddColumn(&models.FaceGroup{}, "display_label"); err != nil {
+			log.Printf("Failed to add display_label column to face_groups table: %v\n", err)
+		} else {
+			// Set default display_label to label where display_label is null
+			if err := db.Model(&models.FaceGroup{}).Where("display_label IS NULL").UpdateColumn("display_label", gorm.Expr("label")).Error; err != nil {
+				log.Printf("Failed to set default display_label for existing face groups: %v\n", err)
+			}
+		}
+	}
+
 	return nil
 }
 

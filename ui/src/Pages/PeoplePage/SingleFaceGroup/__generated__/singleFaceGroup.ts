@@ -81,6 +81,10 @@ export interface singleFaceGroup_faceGroup {
    * The name of the person
    */
   label: string | null;
+  /**
+   * The display name
+   */
+  displayLabel: string | null;
   imageFaces: singleFaceGroup_faceGroup_imageFaces[];
 }
 

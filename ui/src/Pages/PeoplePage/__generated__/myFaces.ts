@@ -62,6 +62,10 @@ export interface myFaces_myFaceGroups {
    */
   label: string | null;
   /**
+   * The display name
+   */
+  displayLabel: string | null;
+  /**
    * The total number of images in this collection
    */
   imageFaceCount: number;

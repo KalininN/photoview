@@ -102,6 +102,7 @@ export const SIDEBAR_MEDIA_QUERY = gql`
         faceGroup {
           id
           label
+          displayLabel
           imageFaceCount
         }
         media {
