@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useIsAdmin } from '../../../components/routes/AuthorizedRoute'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import FaceCircleImage from '../../../Pages/PeoplePage/FaceCircleImage'
@@ -166,6 +167,7 @@ type MediaSidebarFaceProps = {
 const MediaSidebarPerson = ({ face, menuFlipped }: MediaSidebarFaceProps) => {
   const [changeLabel, setChangeLabel] = useState(false)
 
+  const isAdmin = useIsAdmin()
   return (
     <li className="inline-block">
       <Link to={`/people/${face.faceGroup.id}`}>
@@ -179,7 +181,7 @@ const MediaSidebarPerson = ({ face, menuFlipped }: MediaSidebarFaceProps) => {
           editLabel={changeLabel}
           setEditLabel={setChangeLabel}
         />
-        {!changeLabel && (
+        {isAdmin && !changeLabel && (
           <PersonMoreMenu
             menuFlipped={menuFlipped}
             className="pl-0.5"

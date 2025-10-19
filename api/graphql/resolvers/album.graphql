@@ -54,8 +54,8 @@ extend type Query {
 
 extend type Mutation {
   "Reset the assigned cover photo for an album"
-  resetAlbumCover(albumID: ID!): Album! @isAuthorized
+  resetAlbumCover(albumID: ID!): Album! @isAdmin
 
   "Assign a cover photo to an album"
-  setAlbumCover(coverID: ID!): Album! @isAuthorized
+  setAlbumCover(coverID: ID!): Album! @isAdmin
 }

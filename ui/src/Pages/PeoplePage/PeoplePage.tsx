@@ -1,4 +1,5 @@
 import React, { createRef, useEffect, useState } from 'react'
+import { useIsAdmin } from '../../components/routes/AuthorizedRoute'
 import { gql, useMutation, useQuery } from '@apollo/client'
 import Layout from '../../components/layout/Layout'
 import styled from 'styled-components'
@@ -158,6 +159,7 @@ export const FaceDetails = ({
     }
   }
 
+  const isAdmin = useIsAdmin()
   let label
   if (!editLabel) {
     label = (
@@ -167,7 +169,7 @@ export const FaceDetails = ({
           'whitespace-nowrap inline-block overflow-hidden overflow-clip'
         )}
         labeled={!!group.displayLabel}
-        onClick={() => setEditLabel(true)}
+        onClick={() => isAdmin && setEditLabel(true)}
       >
         <FaceImagesCount>{group.imageFaceCount}</FaceImagesCount>
         <button className="">
@@ -278,6 +280,7 @@ export const PeoplePage = () => {
   }
 
   let faces: JSX.Element[] | null = null
+  const isAdmin = useIsAdmin()
   if (data) {
     faces = data.myFaceGroups.map(faceGroup => (
       <FaceGroup key={faceGroup.id} group={faceGroup} />
@@ -285,20 +288,24 @@ export const PeoplePage = () => {
   }
 
   let modals = null
-  modals = (
-    <MergeFaceGroupsModal
-      state={mergeModalState}
-      setState={setMergeModalState}
-      refetchQueries={[
-        {
-          query: MY_FACES_QUERY,
-        },
-      ]}
-    />
-  )
+  if (isAdmin)
+  {
+    modals = (
+      <MergeFaceGroupsModal
+        state={mergeModalState}
+        setState={setMergeModalState}
+        refetchQueries={[
+          {
+            query: MY_FACES_QUERY,
+          },
+        ]}
+      />
+    )
+  }
 
   return (
     <Layout title={t('title.people', 'People')}>
+      {isAdmin && (
       <ul className="flex gap-2 flex-wrap mb-6">
         <li>
           <Button
@@ -324,7 +331,7 @@ export const PeoplePage = () => {
             {t('people_page.action_label.merge_people', 'Merge people')}
           </Button>
         </li>
-      </ul>
+      </ul>)}
       
       <FaceGroupsWrapper ref={containerElem}>{faces}</FaceGroupsWrapper>
       <PaginateLoader

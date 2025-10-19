@@ -1,4 +1,5 @@
 import { gql, useLazyQuery } from '@apollo/client'
+import { useIsAdmin } from '../../../components/routes/AuthorizedRoute'
 import React, { useEffect, useContext } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -211,6 +212,7 @@ const SidebarContent = ({ media, hidePreview }: SidebarContentProps) => {
     )
   }
 
+  const isAdmin = useIsAdmin()
   return (
     <div>
       <SidebarHeader title={media.title ?? 'Loading...'} />
@@ -234,9 +236,10 @@ const SidebarContent = ({ media, hidePreview }: SidebarContentProps) => {
       {sidebarMap}
       <SidebarMediaDownload media={media} />
       <SidebarPhotoShare id={media.id} />
+      {isAdmin && (
       <div className="mt-8">
         <SidebarPhotoCover cover_id={media.id} />
-      </div>
+      </div>)}
     </div>
   )
 }

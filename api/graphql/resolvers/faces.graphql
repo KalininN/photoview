@@ -39,17 +39,17 @@ extend type Query {
 
 extend type Mutation {
   "Assign a label to a face group, set label to null to remove the current one"
-  setFaceGroupLabel(faceGroupID: ID!, displayLabel: String): FaceGroup! @isAuthorized
+  setFaceGroupLabel(faceGroupID: ID!, displayLabel: String): FaceGroup! @isAdmin
 
   "Merge two face groups into a single one, all ImageFaces from source will be moved to destination"
-  combineFaceGroups(destinationFaceGroupID: ID!, sourceFaceGroupIDs: [ID!]!): FaceGroup! @isAuthorized
+  combineFaceGroups(destinationFaceGroupID: ID!, sourceFaceGroupIDs: [ID!]!): FaceGroup! @isAdmin
 
   "Move a list of ImageFaces to another face group"
-  moveImageFaces(imageFaceIDs: [ID!]!, destinationFaceGroupID: ID!): FaceGroup! @isAuthorized
+  moveImageFaces(imageFaceIDs: [ID!]!, destinationFaceGroupID: ID!): FaceGroup! @isAdmin
 
   "Check all unlabeled faces to see if they match a labeled FaceGroup, and move them if they match"
-  recognizeUnlabeledFaces: [ImageFace!]! @isAuthorized
+  recognizeUnlabeledFaces: [ImageFace!]! @isAdmin
 
   "Move a list of ImageFaces to a new face group"
-  detachImageFaces(imageFaceIDs: [ID!]!): FaceGroup! @isAuthorized
+  detachImageFaces(imageFaceIDs: [ID!]!): FaceGroup! @isAdmin
 }

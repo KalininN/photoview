@@ -5,6 +5,7 @@ import React, {
   createRef,
   KeyboardEventHandler,
 } from 'react'
+import { useIsAdmin } from '../../../components/routes/AuthorizedRoute'
 import { useTranslation } from 'react-i18next'
 import { isNil } from '../../../helpers/utils'
 import { Button, TextField } from '../../../primitives/form/Input'
@@ -109,8 +110,9 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
     )
   }
 
+  const isAdmin = useIsAdmin()
   let modals = null
-  if (faceGroup) {
+  if (isAdmin && faceGroup) {
     modals = (
       <>
         <MergeFaceGroupsModal
@@ -141,6 +143,7 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
     <>
       <div>
         <div className="mb-2">{title}</div>
+        {isAdmin && (
         <ul className="flex gap-2 flex-wrap mb-6">
           <li>
             <Button onClick={() => setEditLabel(true)}>
@@ -166,7 +169,7 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
               {t('people_page.action_label.move_faces', 'Move faces')}
             </Button>
           </li>
-        </ul>
+        </ul>)}
       </div>
       {modals}
     </>

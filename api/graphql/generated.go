@@ -7134,11 +7134,11 @@ func (ec *executionContext) _Mutation_resetAlbumCover(ctx context.Context, field
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.Album
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7233,11 +7233,11 @@ func (ec *executionContext) _Mutation_setAlbumCover(ctx context.Context, field g
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.Album
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7332,11 +7332,11 @@ func (ec *executionContext) _Mutation_setFaceGroupLabel(ctx context.Context, fie
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.FaceGroup
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7421,11 +7421,11 @@ func (ec *executionContext) _Mutation_combineFaceGroups(ctx context.Context, fie
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.FaceGroup
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7510,11 +7510,11 @@ func (ec *executionContext) _Mutation_moveImageFaces(ctx context.Context, field 
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.FaceGroup
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7599,11 +7599,11 @@ func (ec *executionContext) _Mutation_recognizeUnlabeledFaces(ctx context.Contex
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal []*models.ImageFace
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7675,11 +7675,11 @@ func (ec *executionContext) _Mutation_detachImageFaces(ctx context.Context, fiel
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.FaceGroup
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -8380,11 +8380,11 @@ func (ec *executionContext) _Mutation_deleteShareToken(ctx context.Context, fiel
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.ShareToken
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -8473,11 +8473,11 @@ func (ec *executionContext) _Mutation_protectShareToken(ctx context.Context, fie
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.ShareToken
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
