@@ -20,12 +20,14 @@ import MergeFaceGroupsModal, {
 } from './MergeFaceGroupsModal'
 import MoveImageFacesModal from './MoveImageFacesModal'
 import { singleFaceGroup_faceGroup } from './__generated__/singleFaceGroup'
+import { RatingDropdownProps, RatingDropdown } from '../../../components/album/AlbumFilter'
+
 
 type FaceGroupTitleProps = {
   faceGroup?: singleFaceGroup_faceGroup
-}
+} & RatingDropdownProps
 
-const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
+const FaceGroupTitle = ({ faceGroup, minRating, setMinRating }: FaceGroupTitleProps) => {
   const { t } = useTranslation()
 
   const [editLabel, setEditLabel] = useState(false)
@@ -170,6 +172,9 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
             </Button>
           </li>
         </ul>)}
+        <div className="flex items-end gap-4 flex-wrap mb-4">
+          <RatingDropdown minRating={minRating} setMinRating={setMinRating} />
+        </div>
       </div>
       {modals}
     </>

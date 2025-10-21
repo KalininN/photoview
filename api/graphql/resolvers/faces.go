@@ -16,7 +16,7 @@ import (
 )
 
 // ImageFaces is the resolver for the imageFaces field.
-func (r *faceGroupResolver) ImageFaces(ctx context.Context, obj *models.FaceGroup, paginate *models.Pagination) ([]*models.ImageFace, error) {
+func (r *faceGroupResolver) ImageFaces(ctx context.Context, obj *models.FaceGroup, minRating *int, paginate *models.Pagination) ([]*models.ImageFace, error) {
 	db := r.DB(ctx)
 	user := auth.UserFromContext(ctx)
 	if user == nil {
@@ -40,6 +40,10 @@ func (r *faceGroupResolver) ImageFaces(ctx context.Context, obj *models.FaceGrou
 		Joins("Media").
 		Where(faceGroupIDIsQuestion, obj.ID).
 		Where("album_id IN (?)", userAlbumIDs)
+
+	if minRating != nil {
+		query = query.Where("media.rating >= ?", *minRating)
+	}
 
 	query = models.FormatSQL(query, nil, paginate)
 

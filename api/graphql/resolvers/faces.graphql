@@ -13,7 +13,7 @@ type FaceGroup {
   label: String
   "The display name"
   displayLabel: String
-  imageFaces(paginate: Pagination): [ImageFace!]!
+  imageFaces(minRating: Int, paginate: Pagination): [ImageFace!]!
   "The total number of images in this collection"
   imageFaceCount: Int!
 }

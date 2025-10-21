@@ -87,7 +87,7 @@ type ComplexityRoot struct {
 		DisplayLabel   func(childComplexity int) int
 		ID             func(childComplexity int) int
 		ImageFaceCount func(childComplexity int) int
-		ImageFaces     func(childComplexity int, paginate *models.Pagination) int
+		ImageFaces     func(childComplexity int, minRating *int, paginate *models.Pagination) int
 		Label          func(childComplexity int) int
 	}
 
@@ -292,7 +292,7 @@ type AlbumResolver interface {
 	Shares(ctx context.Context, obj *models.Album) ([]*models.ShareToken, error)
 }
 type FaceGroupResolver interface {
-	ImageFaces(ctx context.Context, obj *models.FaceGroup, paginate *models.Pagination) ([]*models.ImageFace, error)
+	ImageFaces(ctx context.Context, obj *models.FaceGroup, minRating *int, paginate *models.Pagination) ([]*models.ImageFace, error)
 	ImageFaceCount(ctx context.Context, obj *models.FaceGroup) (int, error)
 }
 type ImageFaceResolver interface {
@@ -538,7 +538,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.FaceGroup.ImageFaces(childComplexity, args["paginate"].(*models.Pagination)), true
+		return e.complexity.FaceGroup.ImageFaces(childComplexity, args["minRating"].(*int), args["paginate"].(*models.Pagination)), true
 
 	case "FaceGroup.label":
 		if e.complexity.FaceGroup.Label == nil {
@@ -1968,13 +1968,36 @@ func (ec *executionContext) field_Album_subAlbums_argsPaginate(
 func (ec *executionContext) field_FaceGroup_imageFaces_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_FaceGroup_imageFaces_argsPaginate(ctx, rawArgs)
+	arg0, err := ec.field_FaceGroup_imageFaces_argsMinRating(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["paginate"] = arg0
+	args["minRating"] = arg0
+	arg1, err := ec.field_FaceGroup_imageFaces_argsPaginate(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["paginate"] = arg1
 	return args, nil
 }
+func (ec *executionContext) field_FaceGroup_imageFaces_argsMinRating(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*int, error) {
+	if _, ok := rawArgs["minRating"]; !ok {
+		var zeroVal *int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("minRating"))
+	if tmp, ok := rawArgs["minRating"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_FaceGroup_imageFaces_argsPaginate(
 	ctx context.Context,
 	rawArgs map[string]any,
@@ -4808,7 +4831,7 @@ func (ec *executionContext) _FaceGroup_imageFaces(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.FaceGroup().ImageFaces(rctx, obj, fc.Args["paginate"].(*models.Pagination))
+		return ec.resolvers.FaceGroup().ImageFaces(rctx, obj, fc.Args["minRating"].(*int), fc.Args["paginate"].(*models.Pagination))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

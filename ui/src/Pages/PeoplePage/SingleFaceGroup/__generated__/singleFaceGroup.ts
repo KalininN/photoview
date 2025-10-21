@@ -97,6 +97,7 @@ export interface singleFaceGroup {
 
 export interface singleFaceGroupVariables {
   id: string;
+  minRating?: number | null;
   limit: number;
   offset: number;
 }

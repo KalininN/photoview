@@ -1,6 +1,7 @@
 import { gql, useQuery } from '@apollo/client'
 import React, { useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
+import useURLParameters from '../../../hooks/useURLParameters'
 import PaginateLoader from '../../../components/PaginateLoader'
 import MediaGallery from '../../../components/photoGallery/MediaGallery'
 import { mediaGalleryReducer } from '../../../components/photoGallery/mediaGalleryReducer'
@@ -12,12 +13,12 @@ import {
 } from './__generated__/singleFaceGroup'
 
 export const SINGLE_FACE_GROUP = gql`
-  query singleFaceGroup($id: ID!, $limit: Int!, $offset: Int!) {
+  query singleFaceGroup($id: ID!, $minRating: Int, $limit: Int!, $offset: Int!) {
     faceGroup(id: $id) {
       id
       label
       displayLabel
-      imageFaces(paginate: { limit: $limit, offset: $offset }) {
+      imageFaces(minRating: $minRating, paginate: { limit: $limit, offset: $offset }) {
         id
         rectangle {
           minX
@@ -52,7 +53,14 @@ type SingleFaceGroupProps = {
 const SingleFaceGroup = ({ faceGroupID }: SingleFaceGroupProps) => {
   const { t } = useTranslation()
 
-  const { data, error, loading, fetchMore } = useQuery<
+  const { getParam, setParam } = useURLParameters()
+
+  const minRatingParam = getParam('minRating')
+  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 5
+  const setMinRating = (rating: number) =>
+    setParam('minRating', rating.toString())
+
+  const { data, error, loading, refetch, fetchMore } = useQuery<
     singleFaceGroup,
     singleFaceGroupVariables
   >(SINGLE_FACE_GROUP, {
@@ -60,6 +68,7 @@ const SingleFaceGroup = ({ faceGroupID }: SingleFaceGroupProps) => {
       limit: 200,
       offset: 0,
       id: faceGroupID,
+      minRating: minRating,
     },
   })
 
@@ -82,6 +91,12 @@ const SingleFaceGroup = ({ faceGroupID }: SingleFaceGroupProps) => {
     dispatchMedia({ type: 'replaceMedia', media })
   }, [data])
 
+  useEffect(() => {
+    refetch({
+      minRating: minRating,
+    })
+  }, [minRating])
+
   const faceGroup = data?.faceGroup
 
   if (error) {
@@ -90,7 +105,11 @@ const SingleFaceGroup = ({ faceGroupID }: SingleFaceGroupProps) => {
 
   return (
     <div ref={containerElem}>
-      <FaceGroupTitle faceGroup={faceGroup} />
+      <FaceGroupTitle
+        faceGroup={faceGroup}
+        minRating={minRating}
+        setMinRating={setMinRating}
+      />
       <div>
         <MediaGallery
           loading={loading}
