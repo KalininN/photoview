@@ -116,6 +116,11 @@ func (fd *faceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
 	ws := toFloatSlice(fileInfo.Fields["RegionAreaW"])
 	hs := toFloatSlice(fileInfo.Fields["RegionAreaH"])
 
+	if media.Exif.Orientation != nil {
+		log.Printf("Exif orientation: %d", *media.Exif.Orientation)
+		// TODO: rotate xs, ys according to the orientation
+	}
+
 	// Sanity check lengths
 	for i := 0; i < len(types); i++ {
 		if types[i] != "Face" {
