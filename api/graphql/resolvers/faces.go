@@ -42,7 +42,7 @@ func (r *faceGroupResolver) ImageFaces(ctx context.Context, obj *models.FaceGrou
 		Where("album_id IN (?)", userAlbumIDs)
 
 	if minRating != nil {
-		query = query.Where("media.rating >= ?", *minRating)
+		query = query.Where("rating >= ?", *minRating)
 	}
 
 	query = models.FormatSQL(query, nil, paginate)
