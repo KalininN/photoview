@@ -86,6 +86,46 @@ func toFloatSlice(raw interface{}) []float64 {
 	return result
 }
 
+// RotatePoint transforms normalized coordinates (x, y)
+// according to EXIF Orientation (1–8).
+func RotatePoint(x, y, h, w float64, orientation int) (float64, float64, float64, float64) {
+	var rotations int
+	var flip bool
+
+	switch orientation {
+	case 1:
+		rotations, flip = 0, false
+	case 2:
+		rotations, flip = 0, true
+	case 3:
+		rotations, flip = 2, false
+	case 4:
+		rotations, flip = 2, true
+	case 5:
+		rotations, flip = 3, true
+	case 6:
+		rotations, flip = 1, false
+	case 7:
+		rotations, flip = 1, true
+	case 8:
+		rotations, flip = 3, false
+	default:
+		rotations, flip = 0, false
+	}
+
+	for i := 0; i < rotations; i++ {
+		x, y = 1-y, x
+		h, w = w, h
+	}
+
+	// Apply horizontal flip if needed
+	if flip {
+		x = 1 - x
+	}
+
+	return x, y, h, w
+}
+
 // DetectFaces finds the faces in the given image and saves them to the database
 func (fd *faceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
 	if err := db.Model(media).Preload("MediaURL").First(&media).Error; err != nil {
@@ -111,14 +151,21 @@ func (fd *faceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
 	// RegionName, RegionType, RegionAreaX, RegionAreaY, RegionAreaW, RegionAreaH
 	names := toStringSlice(fileInfo.Fields["RegionName"])
 	types := toStringSlice(fileInfo.Fields["RegionType"])
-	xs := toFloatSlice(fileInfo.Fields["RegionAreaX"])
-	ys := toFloatSlice(fileInfo.Fields["RegionAreaY"])
-	ws := toFloatSlice(fileInfo.Fields["RegionAreaW"])
-	hs := toFloatSlice(fileInfo.Fields["RegionAreaH"])
+	xs_raw := toFloatSlice(fileInfo.Fields["RegionAreaX"])
+	ys_raw := toFloatSlice(fileInfo.Fields["RegionAreaY"])
+	ws_raw := toFloatSlice(fileInfo.Fields["RegionAreaW"])
+	hs_raw := toFloatSlice(fileInfo.Fields["RegionAreaH"])
 
+	xs := make([]float64, len(xs_raw))
+	ys := make([]float64, len(ys_raw))
+	hs := make([]float64, len(hs_raw))
+	ws := make([]float64, len(ws_raw))
 	if media.Exif.Orientation != nil {
 		log.Printf("Exif orientation: %d", *media.Exif.Orientation)
-		// TODO: rotate xs, ys according to the orientation
+
+		for i := range xs_raw {
+			xs[i], ys[i], hs[i], ws[i] = RotatePoint(xs_raw[i], ys_raw[i], hs_raw[i], ws_raw[i], int(*media.Exif.Orientation))
+		}
 	}
 
 	// Sanity check lengths
