@@ -13,6 +13,8 @@ type FaceGroup {
   label: String
   "The display name"
   displayLabel: String
+  "The id of the cover photo"
+  thumbnail: ImageFace!
   imageFaces(minRating: Int, paginate: Pagination): [ImageFace!]!
   "The total number of images in this collection"
   imageFaceCount: Int!
@@ -40,6 +42,9 @@ extend type Query {
 extend type Mutation {
   "Assign a label to a face group, set label to null to remove the current one"
   setFaceGroupLabel(faceGroupID: ID!, displayLabel: String): FaceGroup! @isAdmin
+
+  "Assign a cover photo to a face group, set id to null to remove the current one"
+  setFaceGroupCover(faceGroupID: ID!, faceID: ID!): FaceGroup! @isAdmin
 
   "Merge two face groups into a single one, all ImageFaces from source will be moved to destination"
   combineFaceGroups(destinationFaceGroupID: ID!, sourceFaceGroupIDs: [ID!]!): FaceGroup! @isAdmin

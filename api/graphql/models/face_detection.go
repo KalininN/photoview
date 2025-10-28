@@ -18,6 +18,7 @@ type FaceGroup struct {
 	Label        *string
 	DisplayLabel *string
 	ImageFaces   []ImageFace `gorm:"constraint:OnDelete:CASCADE;"`
+	CoverID      *int
 }
 
 type ImageFace struct {

@@ -236,6 +236,13 @@ func MigrateDatabase(db *gorm.DB) error {
 		}
 	}
 
+	// Add cover_id column to face_groups table
+	if !db.Migrator().HasColumn(&models.FaceGroup{}, "cover_id") {
+		if err := db.Migrator().AddColumn(&models.FaceGroup{}, "cover_id"); err != nil {
+			log.Printf("Failed to add cover_id column to face_groups table: %v\n", err)
+		}
+	}
+
 	return nil
 }
 

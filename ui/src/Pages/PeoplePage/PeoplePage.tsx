@@ -32,8 +32,7 @@ export const MY_FACES_QUERY = gql`
       id
       label
       displayLabel
-      imageFaceCount
-      imageFaces(paginate: { limit: 1 }) {
+      thumbnail {
         id
         rectangle {
           minX
@@ -51,6 +50,7 @@ export const MY_FACES_QUERY = gql`
           }
         }
       }
+      imageFaceCount
     }
   }
 `
@@ -220,7 +220,7 @@ type FaceGroupProps = {
 }
 
 export const FaceGroup = ({ group }: FaceGroupProps) => {
-  const previewFace = group.imageFaces[0]
+  const previewFace = group.thumbnail
   const [editLabel, setEditLabel] = useState(false)
 
   return (

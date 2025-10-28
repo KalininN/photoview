@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useMutation, gql } from '@apollo/client'
 import { useIsAdmin } from '../../../components/routes/AuthorizedRoute'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
@@ -18,6 +19,15 @@ import MergeFaceGroupsModal, {
 import { useDetachImageFaces } from '../../../Pages/PeoplePage/SingleFaceGroup/DetachImageFacesModal'
 import MoveImageFacesModal from '../../../Pages/PeoplePage/SingleFaceGroup/MoveImageFacesModal'
 import { FaceDetails } from '../../../Pages/PeoplePage/PeoplePage'
+import { setFaceGroupCover, setFaceGroupCoverVariables } from './__generated__/setFaceGroupCover'
+
+const SET_FACE_GROUP_COVER_MUTATION = gql`
+  mutation setFaceGroupCover($faceGroupID: ID!, $faceID: ID!) {
+    setFaceGroupCover(faceGroupID: $faceGroupID, faceID: $faceID) {
+      id
+    }
+  }
+`
 
 type PersonMoreMenuItemProps = {
   displayLabel: string
@@ -116,6 +126,16 @@ const PersonMoreMenu = ({
     })
   }
 
+  const [setThumbnail] = useMutation<setFaceGroupCover, setFaceGroupCoverVariables>(
+      SET_FACE_GROUP_COVER_MUTATION,
+      {
+        variables: {
+          faceGroupID: face.faceGroup.id,
+          faceID: face.id,
+        },
+      }
+    )
+
   return (
     <>
       <Menu
@@ -131,6 +151,11 @@ const PersonMoreMenu = ({
               onClick={() => setChangeLabel(true)}
               className="border-b"
               displayLabel={t('people_page.action_label.change_label', 'Change label')}
+            />
+            <PersonMoreMenuItem
+              onClick={() => setThumbnail()}
+              className="border-b"
+              displayLabel={t('people_page.action_label.set_thumbnail', 'Set thumbnail')}
             />
             <PersonMoreMenuItem
               onClick={() =>
