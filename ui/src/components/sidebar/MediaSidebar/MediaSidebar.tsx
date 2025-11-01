@@ -169,8 +169,7 @@ const SidebarContent = ({ media, hidePreview }: SidebarContentProps) => {
 	const { updateSidebar } = useContext(SidebarContext)
   const { t } = useTranslation()
   let previewImage = null
-  if (media.highRes) previewImage = media.highRes
-  else if (media.thumbnail) previewImage = media.thumbnail
+  if (media.thumbnail) previewImage = media.thumbnail
 
   const imageAspect =
     previewImage?.width && previewImage?.height
@@ -186,7 +185,6 @@ const SidebarContent = ({ media, hidePreview }: SidebarContentProps) => {
   let albumPath = null
   const mediaAlbum = media.album
   if (!isNil(mediaAlbum)) {
-    console.log('PATH reversed', mediaAlbum.path ?? [])
     const pathElms = [
       ...[...(mediaAlbum.path ?? [])].reverse(),
       mediaAlbum,
