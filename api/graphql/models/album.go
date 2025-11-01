@@ -83,13 +83,39 @@ func GetParentsFromAlbums(db *gorm.DB, filter func(*gorm.DB) *gorm.DB, albumID i
 func (a *Album) Thumbnail(db *gorm.DB) (*Media, error) {
 	var media Media
 
+	// First, prefer this album's explicit cover if set.
 	if a.CoverID != nil {
-		if err := db.First(&media, *a.CoverID).Error; err != nil {
+		if err := db.First(&media, *a.CoverID).Error; err == nil {
+			return &media, nil
+		} else if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+	}
+
+	// Next, try to find the largest non-null cover_id among this album and all descendants.
+	var maxCover int64
+	maxQuery := `
+		WITH RECURSIVE sub_albums AS (
+			SELECT id FROM albums WHERE id = ?
+			UNION ALL
+			SELECT children.id FROM albums AS children
+			INNER JOIN sub_albums ON children.parent_album_id = sub_albums.id
+		)
+		SELECT COALESCE(MAX(cover_id), 0) FROM albums WHERE id IN (SELECT id FROM sub_albums)
+	`
+
+	if err := db.Raw(maxQuery, a.ID).Scan(&maxCover).Error; err != nil {
+		return nil, err
+	}
+
+	if maxCover > 0 {
+		if err := db.First(&media, maxCover).Error; err != nil {
 			return nil, err
 		}
 		return &media, nil
 	}
 
+	// If no cover_id found across sub_albums, fall back to the newest media across the sub_albums.
 	query := `
 		WITH RECURSIVE sub_albums AS (
 			SELECT id FROM albums WHERE id = ?
