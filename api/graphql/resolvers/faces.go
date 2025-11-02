@@ -22,10 +22,9 @@ func (r *faceGroupResolver) Thumbnail(ctx context.Context, obj *models.FaceGroup
 	var image_face models.ImageFace
 
 	if obj.CoverID != nil {
-		if err := db.First(&image_face, *obj.CoverID).Error; err != nil {
-			return nil, err
+		if err := db.First(&image_face, *obj.CoverID).Error; err == nil {
+			return &image_face, nil
 		}
-		return &image_face, nil
 	}
 
 	if err := db.Joins("Media").Where(faceGroupIDIsQuestion, obj.ID).Order("rating desc").First(&image_face).Error; err != nil {
