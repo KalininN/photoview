@@ -85,10 +85,14 @@ const TimelineGallery = () => {
   const setOnlyFavorites = (favorites: boolean) =>
     setParam('favorites', favorites ? '1' : null)
 
+  const sanitizeRating = (rating: number) => {
+    return Math.max(Math.min(rating, 5), 3)
+  }
+
   const minRatingParam = getParam('minRating')
   const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 5
   const setMinRating = (rating: number) =>
-    setParam('minRating', rating.toString())
+    setParam('minRating', sanitizeRating(rating).toString())
 
   const filterDate = getParam('date')
   const setFilterDate = (x: string) => setParam('date', x)

@@ -11,6 +11,7 @@ import {
   singleFaceGroup,
   singleFaceGroupVariables,
 } from './__generated__/singleFaceGroup'
+import { set } from 'husky'
 
 export const SINGLE_FACE_GROUP = gql`
   query singleFaceGroup($id: ID!, $minRating: Int, $limit: Int!, $offset: Int!) {
@@ -55,10 +56,15 @@ const SingleFaceGroup = ({ faceGroupID }: SingleFaceGroupProps) => {
 
   const { getParam, setParam } = useURLParameters()
 
+  const sanitizeRating = (rating: number) => {
+    return Math.max(Math.min(rating, 5), 3)
+  }
+
   const minRatingParam = getParam('minRating')
-  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 5
-  const setMinRating = (rating: number) =>
-    setParam('minRating', rating.toString())
+  const minRating = sanitizeRating(minRatingParam !== null ? parseInt(minRatingParam, 10) : 5)
+  const setMinRating = (rating: number) => {
+    setParam('minRating', sanitizeRating(rating).toString())
+  }
 
   const { data, error, loading, refetch, fetchMore } = useQuery<
     singleFaceGroup,

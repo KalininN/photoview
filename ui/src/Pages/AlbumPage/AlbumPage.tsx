@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useEffect, useCallback } from 'react'
 import { useQuery, gql } from '@apollo/client'
 import AlbumGallery, {
   ALBUM_GALLERY_FRAGMENT,
@@ -48,10 +48,14 @@ function AlbumPage() {
   const setOnlyFavorites = (favorites: boolean) =>
     urlParams.setParam('favorites', favorites ? '1' : '0')
 
+  const sanitizeRating = (rating: number) => {
+    return Math.max(Math.min(rating, 5), 3)
+  }
+
   const minRatingParam = urlParams.getParam('minRating')
-  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 5
+  const minRating = sanitizeRating(minRatingParam !== null ? parseInt(minRatingParam, 10) : 4)
   const setMinRating = (rating: number) =>
-    urlParams.setParam('minRating', rating.toString())
+    urlParams.setParam('minRating', sanitizeRating(rating).toString())
 
   const { loading, error, data, refetch, fetchMore } = useQuery<
     albumQuery,
@@ -97,16 +101,11 @@ function AlbumPage() {
     [setOnlyFavorites, refetch]
   )
 
-  const toggleMinRating = useCallback(
-    (rating: number) => {
-      setMinRating(rating)
-      refetch({
-        id: albumId,
-        minRating: rating,
-      })
-    },
-    [setMinRating, refetch]
-  )
+  useEffect(() => {
+    refetch({
+      minRating: minRating,
+    })
+  }, [minRating])
 
   if (error) return <div>Error</div>
 
@@ -127,7 +126,7 @@ function AlbumPage() {
         setOrdering={orderParams.setOrdering}
         ordering={orderParams}
         minRating={minRating}
-        setMinRating={toggleMinRating}
+        setMinRating={setMinRating}
       />
       <PaginateLoader
         active={!finishedLoadingMore && !loading}

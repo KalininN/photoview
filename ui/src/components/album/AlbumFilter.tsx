@@ -126,15 +126,15 @@ export const RatingDropdown = ({ minRating: ratingFilter, setMinRating: setRatin
   const ratingOptions = [
     {
       value: '5',
-      label: t('album_filter.rating_options.5', '5'),
+      label: t('album_filter.rating_options.5', 'best only'),
     },
     {
       value: '4',
-      label: t('album_filter.rating_options.at_least_4', 'at least 4'),
+      label: t('album_filter.rating_options.at_least_4', 'story'),
     },
     {
       value: '3',
-      label: t('album_filter.rating_options.at_least_3', 'at least 3'),
+      label: t('album_filter.rating_options.at_least_3', 'all'),
     },
   ]
 

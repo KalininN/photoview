@@ -31,7 +31,6 @@ class LabelEditable extends React.Component<Props, State> {
 
     componentDidUpdate(prevProps: Props, prevState: State) {
         // keep inputValue in sync when not editing
-        console.log('LabelEditable componentDidUpdate', this.props.value, prevProps.value)
         if (!this.state.editing && prevProps.value !== this.props.value) {
             this.setState({ inputValue: this.props.value ?? '' })
         }
