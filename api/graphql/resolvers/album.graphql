@@ -58,4 +58,10 @@ extend type Mutation {
 
   "Assign a cover photo to an album"
   setAlbumCover(coverID: ID!): Album! @isAdmin
+
+  "Assign a custom album title"
+  setAlbumTitle(albumID: ID!, title: String!): Album! @isAdmin
+
+  "Reset a curtom album title"
+  resetAlbumTitle(albumID: ID!): Album! @isAdmin
 }
