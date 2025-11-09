@@ -1,4 +1,5 @@
 import { gql, useQuery } from '@apollo/client'
+import { useIsAdmin } from '../../../components/routes/AuthorizedRoute'
 import React, { useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import useURLParameters from '../../../hooks/useURLParameters'
@@ -10,8 +11,12 @@ import FaceGroupTitle from './FaceGroupTitle'
 import {
   singleFaceGroup,
   singleFaceGroupVariables,
+  singleFaceGroup_faceGroup_imageFaces,
 } from './__generated__/singleFaceGroup'
 import { set } from 'husky'
+import { FaceGroupsWrapper } from '../PeoplePage'
+import { FaceCircleImage } from '../FaceCircleImage'
+
 
 export const SINGLE_FACE_GROUP = gql`
   query singleFaceGroup($id: ID!, $minRating: Int, $limit: Int!, $offset: Int!) {
@@ -48,6 +53,20 @@ export const SINGLE_FACE_GROUP = gql`
 
 type SingleFaceGroupProps = {
   faceGroupID: string
+}
+
+type FaceDetectedProps = {
+  face: singleFaceGroup_faceGroup_imageFaces
+}
+
+export const FaceDetected = ({ face }: FaceDetectedProps) => {
+  const previewFace = face
+
+  return (
+    <div className="m-3">
+      <FaceCircleImage imageFace={previewFace} selectable />
+    </div>
+  )
 }
 
 const SingleFaceGroup = ({ faceGroupID }: SingleFaceGroupProps) => {
@@ -104,6 +123,14 @@ const SingleFaceGroup = ({ faceGroupID }: SingleFaceGroupProps) => {
 
   const faceGroup = data?.faceGroup
 
+  const isAdmin = useIsAdmin()
+  let faces: JSX.Element[] | null = null
+  if (data) {
+    faces = faceGroup?.imageFaces.map(imageFace => (
+      <FaceDetected face={imageFace} />
+    ))
+  }
+
   if (error) {
     return <div>{error.message}</div>
   }
@@ -121,6 +148,9 @@ const SingleFaceGroup = ({ faceGroupID }: SingleFaceGroupProps) => {
           dispatchMedia={dispatchMedia}
           mediaState={mediaState}
         />
+        {isAdmin && (
+          <FaceGroupsWrapper ref={containerElem}>{faces}</FaceGroupsWrapper>
+        )}
         <PaginateLoader
           active={!finishedLoadingMore && !loading}
           text={t('general.loading.paginate.media', 'Loading more media')}
