@@ -160,12 +160,15 @@ func (fd *faceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
 	ys := make([]float64, len(ys_raw))
 	hs := make([]float64, len(hs_raw))
 	ws := make([]float64, len(ws_raw))
+
+	orientation := 1
 	if media.Exif.Orientation != nil {
 		log.Printf("Exif orientation: %d", *media.Exif.Orientation)
+		orientation = int(*media.Exif.Orientation)
+	}
 
-		for i := range xs_raw {
-			xs[i], ys[i], hs[i], ws[i] = RotatePoint(xs_raw[i], ys_raw[i], hs_raw[i], ws_raw[i], int(*media.Exif.Orientation))
-		}
+	for i := range xs_raw {
+		xs[i], ys[i], hs[i], ws[i] = RotatePoint(xs_raw[i], ys_raw[i], hs_raw[i], ws_raw[i], orientation)
 	}
 
 	// Sanity check lengths
