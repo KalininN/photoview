@@ -77,8 +77,7 @@ const FaceGroupTitle = ({ faceGroup, minRating, setMinRating }: FaceGroupTitlePr
             faceGroup?.displayLabel ? '' : 'text-gray-600 dark:text-gray-400'
           }`}
         >
-          {faceGroup?.displayLabel ?? (faceGroup?.label ??
-          t('people_page.face_group.unlabeled_person', 'Unlabeled person'))
+          {faceGroup?.displayLabel ?? t('people_page.face_group.unlabeled_person', 'Unlabeled person')
             }
         </h1>
       </>

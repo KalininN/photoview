@@ -78,10 +78,6 @@ export interface singleFaceGroup_faceGroup {
   __typename: "FaceGroup";
   id: string;
   /**
-   * The name of the person
-   */
-  label: string | null;
-  /**
    * The display name
    */
   displayLabel: string | null;

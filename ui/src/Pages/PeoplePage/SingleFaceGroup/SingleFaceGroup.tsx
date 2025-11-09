@@ -17,7 +17,6 @@ export const SINGLE_FACE_GROUP = gql`
   query singleFaceGroup($id: ID!, $minRating: Int, $limit: Int!, $offset: Int!) {
     faceGroup(id: $id) {
       id
-      label
       displayLabel
       imageFaces(minRating: $minRating, paginate: { limit: $limit, offset: $offset }) {
         id
