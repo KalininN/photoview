@@ -7,13 +7,15 @@ import {
   PhotoGalleryAction,
   MediaGalleryState,
 } from './mediaGalleryReducer'
+import { MediaGalleryFields } from './__generated__/MediaGalleryFields'
 import {
   toggleFavoriteAction,
   useMarkFavoriteMutation,
 } from './photoGalleryMutations'
 import MediaSidebar from '../sidebar/MediaSidebar/MediaSidebar'
 import { SidebarContext } from '../sidebar/Sidebar'
-import { gql } from '@apollo/client'
+import { useMutation, gql } from '@apollo/client'
+import { likeMedia, likeMediaVariables } from './__generated__/likeMedia'
 
 const Gallery = styled.div`
   display: flex;
@@ -51,8 +53,22 @@ export const MEDIA_GALLERY_FRAGMENT = gql`
       url
     }
     favorite
+    likes
   }
 `
+
+const LIKE_MEDIA_MUTATION = gql`
+  mutation likeMedia($mediaId: ID!) {
+    likeMedia(mediaId: $mediaId) {
+      id
+      likes
+    }
+  }
+`
+
+export const getLocalStorageLikedKey = (mediaId: string) => {
+  return `liked_media_${mediaId}`
+}
 
 type MediaGalleryProps = {
   loading: boolean
@@ -66,6 +82,31 @@ const MediaGallery = ({ mediaState, dispatchMedia }: MediaGalleryProps) => {
   const { media, activeIndex, presenting } = mediaState
 
   const { updateSidebar } = useContext(SidebarContext)
+  const [likeMediaMutation] = useMutation<likeMedia, likeMediaVariables>(
+    LIKE_MEDIA_MUTATION
+  )
+
+  const likePressed = ({ media }: { media: MediaGalleryFields }) => {
+    const wasLiked = localStorage.getItem(getLocalStorageLikedKey(media.id)) === 'true'
+    if (wasLiked) {
+      return
+    }
+    localStorage.setItem(getLocalStorageLikedKey(media.id), 'true')
+    // Optimistic UI update
+    const newLikes = (media.likes || 0) + 1
+    likeMediaMutation({
+      variables: {
+        mediaId: media.id,
+      },
+      optimisticResponse: {
+        likeMedia: {
+          __typename: 'Media',
+          id: media.id,
+          likes: newLikes,
+        },
+      },
+    })
+  }
 
   let mediaElements = []
   if (media) {
@@ -88,6 +129,11 @@ const MediaGallery = ({ mediaState, dispatchMedia }: MediaGalleryProps) => {
             toggleFavoriteAction({
               media,
               markFavorite,
+            })
+          }}
+          clickLike={() => {
+            likePressed({
+              media
             })
           }}
           clickPresent={() => {

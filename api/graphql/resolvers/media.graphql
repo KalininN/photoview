@@ -105,6 +105,9 @@ type Media {
 
   "Manually assigned user rating"
   rating: Int
+
+  "Number of likes"
+  likes: Int
 }
 
 extend type Query {
@@ -124,4 +127,7 @@ extend type Query {
 extend type Mutation {
   "Mark or unmark a media as being a favorite"
   favoriteMedia(mediaId: ID!, favorite: Boolean!): Media! @isAuthorized
+
+  "Add 1 to likes count for a media"
+  likeMedia(mediaId: ID!): Media! @isAuthorized
 }

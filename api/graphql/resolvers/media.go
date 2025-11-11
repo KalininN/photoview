@@ -16,6 +16,7 @@ import (
 	"github.com/photoview/photoview/api/scanner/face_detection"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"gorm.io/gorm"
 )
 
 // Thumbnail is the resolver for the thumbnail field.
@@ -154,6 +155,34 @@ func (r *mutationResolver) FavoriteMedia(ctx context.Context, mediaID int, favor
 	}
 
 	return user.FavoriteMedia(r.DB(ctx), mediaID, favorite)
+}
+
+// LikeMedia is the resolver for the likeMedia field.
+func (r *mutationResolver) LikeMedia(ctx context.Context, mediaID int) (*models.Media, error) {
+	user := auth.UserFromContext(ctx)
+	if user == nil {
+		return nil, auth.ErrUnauthorized
+	}
+	// Combine likes from all users for the media, users can like multiple times
+	db := r.DB(ctx)
+	var media models.Media
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.First(&media, mediaID).Error; err != nil {
+			return fmt.Errorf("could not find media with id %d: %w", mediaID, err)
+		}
+
+		media.Likes += 1
+
+		if err := tx.Save(&media).Error; err != nil {
+			return fmt.Errorf("could not update likes for media with id %d: %w", mediaID, err)
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return &media, nil
 }
 
 // MyMedia is the resolver for the myMedia field.

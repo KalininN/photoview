@@ -116,6 +116,7 @@ type ComplexityRoot struct {
 		Favorite      func(childComplexity int) int
 		HighRes       func(childComplexity int) int
 		ID            func(childComplexity int) int
+		Likes         func(childComplexity int) int
 		Path          func(childComplexity int) int
 		Rating        func(childComplexity int) int
 		Shares        func(childComplexity int) int
@@ -166,6 +167,7 @@ type ComplexityRoot struct {
 		DetachImageFaces            func(childComplexity int, imageFaceIDs []int) int
 		FavoriteMedia               func(childComplexity int, mediaID int, favorite bool) int
 		InitialSetupWizard          func(childComplexity int, username string, password string, rootPath string) int
+		LikeMedia                   func(childComplexity int, mediaID int) int
 		MoveImageFaces              func(childComplexity int, imageFaceIDs []int, destinationFaceGroupID int) int
 		ProtectShareToken           func(childComplexity int, token string, password *string) int
 		RecognizeUnlabeledFaces     func(childComplexity int) int
@@ -331,6 +333,7 @@ type MutationResolver interface {
 	RecognizeUnlabeledFaces(ctx context.Context) ([]*models.ImageFace, error)
 	DetachImageFaces(ctx context.Context, imageFaceIDs []int) (*models.FaceGroup, error)
 	FavoriteMedia(ctx context.Context, mediaID int, favorite bool) (*models.Media, error)
+	LikeMedia(ctx context.Context, mediaID int) (*models.Media, error)
 	ScanAll(ctx context.Context) (*models.ScannerResult, error)
 	ScanUser(ctx context.Context, userID int) (*models.ScannerResult, error)
 	SetPeriodicScanInterval(ctx context.Context, interval int) (int, error)
@@ -681,6 +684,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Media.ID(childComplexity), true
 
+	case "Media.likes":
+		if e.complexity.Media.Likes == nil {
+			break
+		}
+
+		return e.complexity.Media.Likes(childComplexity), true
+
 	case "Media.path":
 		if e.complexity.Media.Path == nil {
 			break
@@ -991,6 +1001,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.InitialSetupWizard(childComplexity, args["username"].(string), args["password"].(string), args["rootPath"].(string)), true
+
+	case "Mutation.likeMedia":
+		if e.complexity.Mutation.LikeMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_likeMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LikeMedia(childComplexity, args["mediaId"].(int)), true
 
 	case "Mutation.moveImageFaces":
 		if e.complexity.Mutation.MoveImageFaces == nil {
@@ -2477,6 +2499,34 @@ func (ec *executionContext) field_Mutation_initialSetupWizard_argsRootPath(
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_likeMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_likeMedia_argsMediaID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["mediaId"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_likeMedia_argsMediaID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	if _, ok := rawArgs["mediaId"]; !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("mediaId"))
+	if tmp, ok := rawArgs["mediaId"]; ok {
+		return ec.unmarshalNID2int(ctx, tmp)
+	}
+
+	var zeroVal int
 	return zeroVal, nil
 }
 
@@ -4194,6 +4244,8 @@ func (ec *executionContext) fieldContext_Album_media(ctx context.Context, field 
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -4522,6 +4574,8 @@ func (ec *executionContext) fieldContext_Album_thumbnail(_ context.Context, fiel
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -5454,6 +5508,8 @@ func (ec *executionContext) fieldContext_ImageFace_media(_ context.Context, fiel
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -6438,6 +6494,47 @@ func (ec *executionContext) fieldContext_Media_rating(_ context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Media_likes(ctx context.Context, field graphql.CollectedField, obj *models.Media) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Media_likes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Likes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalOInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Media_likes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MediaDownload_title(ctx context.Context, field graphql.CollectedField, obj *models.MediaDownload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MediaDownload_title(ctx, field)
 	if err != nil {
@@ -6653,6 +6750,8 @@ func (ec *executionContext) fieldContext_MediaEXIF_media(_ context.Context, fiel
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -8397,6 +8496,8 @@ func (ec *executionContext) fieldContext_Mutation_favoriteMedia(ctx context.Cont
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -8409,6 +8510,121 @@ func (ec *executionContext) fieldContext_Mutation_favoriteMedia(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_favoriteMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_likeMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_likeMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().LikeMedia(rctx, fc.Args["mediaId"].(int))
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			if ec.directives.IsAuthorized == nil {
+				var zeroVal *models.Media
+				return zeroVal, errors.New("directive isAuthorized is not implemented")
+			}
+			return ec.directives.IsAuthorized(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Media); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/photoview/photoview/api/graphql/models.Media`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Media)
+	fc.Result = res
+	return ec.marshalNMedia2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐMedia(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_likeMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Media_id(ctx, field)
+			case "title":
+				return ec.fieldContext_Media_title(ctx, field)
+			case "path":
+				return ec.fieldContext_Media_path(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Media_thumbnail(ctx, field)
+			case "highRes":
+				return ec.fieldContext_Media_highRes(ctx, field)
+			case "videoWeb":
+				return ec.fieldContext_Media_videoWeb(ctx, field)
+			case "album":
+				return ec.fieldContext_Media_album(ctx, field)
+			case "exif":
+				return ec.fieldContext_Media_exif(ctx, field)
+			case "videoMetadata":
+				return ec.fieldContext_Media_videoMetadata(ctx, field)
+			case "favorite":
+				return ec.fieldContext_Media_favorite(ctx, field)
+			case "type":
+				return ec.fieldContext_Media_type(ctx, field)
+			case "date":
+				return ec.fieldContext_Media_date(ctx, field)
+			case "blurhash":
+				return ec.fieldContext_Media_blurhash(ctx, field)
+			case "shares":
+				return ec.fieldContext_Media_shares(ctx, field)
+			case "downloads":
+				return ec.fieldContext_Media_downloads(ctx, field)
+			case "faces":
+				return ec.fieldContext_Media_faces(ctx, field)
+			case "rating":
+				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_likeMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10568,6 +10784,8 @@ func (ec *executionContext) fieldContext_Query_myMedia(ctx context.Context, fiel
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -10659,6 +10877,8 @@ func (ec *executionContext) fieldContext_Query_media(ctx context.Context, field 
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -10750,6 +10970,8 @@ func (ec *executionContext) fieldContext_Query_mediaList(ctx context.Context, fi
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -11213,6 +11435,8 @@ func (ec *executionContext) fieldContext_Query_myTimeline(ctx context.Context, f
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -11954,6 +12178,8 @@ func (ec *executionContext) fieldContext_SearchResult_media(_ context.Context, f
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -12323,6 +12549,8 @@ func (ec *executionContext) fieldContext_ShareToken_media(_ context.Context, fie
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -12765,6 +12993,8 @@ func (ec *executionContext) fieldContext_TimelineGroup_media(_ context.Context, 
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -13370,6 +13600,8 @@ func (ec *executionContext) fieldContext_VideoMetadata_media(_ context.Context, 
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -16835,6 +17067,8 @@ func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, ob
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "rating":
 			out.Values[i] = ec._Media_rating(ctx, field, obj)
+		case "likes":
+			out.Values[i] = ec._Media_likes(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -17118,6 +17352,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "favoriteMedia":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_favoriteMedia(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "likeMedia":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_likeMedia(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

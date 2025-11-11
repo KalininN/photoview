@@ -45,6 +45,7 @@ export const SINGLE_FACE_GROUP = gql`
             url
           }
           favorite
+          likes
         }
       }
     }

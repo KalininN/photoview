@@ -243,6 +243,18 @@ func MigrateDatabase(db *gorm.DB) error {
 		}
 	}
 
+	// Add likes column to media table
+	if !db.Migrator().HasColumn(&models.Media{}, "likes") {
+		if err := db.Migrator().AddColumn(&models.Media{}, "likes"); err != nil {
+			log.Printf("Failed to add likes column to media table: %v\n", err)
+		} else {
+			// Set default likes to 0 for all existing media
+			if err := db.Model(&models.Media{}).Where("likes IS NULL").Update("likes", 0).Error; err != nil {
+				log.Printf("Failed to set default likes for existing media: %v\n", err)
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -59,6 +59,10 @@ export interface singleFaceGroup_faceGroup_imageFaces_media {
    */
   highRes: singleFaceGroup_faceGroup_imageFaces_media_highRes | null;
   favorite: boolean;
+  /**
+   * Number of likes
+   */
+  likes: number | null;
 }
 
 export interface singleFaceGroup_faceGroup_imageFaces {
