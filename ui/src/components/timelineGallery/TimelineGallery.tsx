@@ -103,6 +103,7 @@ const TimelineGallery = () => {
   const [mediaState, dispatchMedia] = useReducer(timelineGalleryReducer, {
     presenting: false,
     timelineGroups: [],
+    timelineMediaIds: [],
     activeIndex: {
       media: -1,
       album: -1,

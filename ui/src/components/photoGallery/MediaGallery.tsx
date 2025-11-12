@@ -7,15 +7,15 @@ import {
   PhotoGalleryAction,
   MediaGalleryState,
 } from './mediaGalleryReducer'
-import { MediaGalleryFields } from './__generated__/MediaGalleryFields'
 import {
   toggleFavoriteAction,
   useMarkFavoriteMutation,
+  likePressed,
+  useLikeMediaMutation,
 } from './photoGalleryMutations'
 import MediaSidebar from '../sidebar/MediaSidebar/MediaSidebar'
 import { SidebarContext } from '../sidebar/Sidebar'
-import { useMutation, gql } from '@apollo/client'
-import { likeMedia, likeMediaVariables } from './__generated__/likeMedia'
+import { gql } from '@apollo/client'
 
 const Gallery = styled.div`
   display: flex;
@@ -57,19 +57,6 @@ export const MEDIA_GALLERY_FRAGMENT = gql`
   }
 `
 
-const LIKE_MEDIA_MUTATION = gql`
-  mutation likeMedia($mediaId: ID!) {
-    likeMedia(mediaId: $mediaId) {
-      id
-      likes
-    }
-  }
-`
-
-export const getLocalStorageLikedKey = (mediaId: string) => {
-  return `liked_media_${mediaId}`
-}
-
 type MediaGalleryProps = {
   loading: boolean
   mediaState: MediaGalleryState
@@ -78,35 +65,11 @@ type MediaGalleryProps = {
 
 const MediaGallery = ({ mediaState, dispatchMedia }: MediaGalleryProps) => {
   const [markFavorite] = useMarkFavoriteMutation()
+  const [likeMedia] = useLikeMediaMutation()
 
   const { media, activeIndex, presenting } = mediaState
 
   const { updateSidebar } = useContext(SidebarContext)
-  const [likeMediaMutation] = useMutation<likeMedia, likeMediaVariables>(
-    LIKE_MEDIA_MUTATION
-  )
-
-  const likePressed = ({ media }: { media: MediaGalleryFields }) => {
-    const wasLiked = localStorage.getItem(getLocalStorageLikedKey(media.id)) === 'true'
-    if (wasLiked) {
-      return
-    }
-    localStorage.setItem(getLocalStorageLikedKey(media.id), 'true')
-    // Optimistic UI update
-    const newLikes = (media.likes || 0) + 1
-    likeMediaMutation({
-      variables: {
-        mediaId: media.id,
-      },
-      optimisticResponse: {
-        likeMedia: {
-          __typename: 'Media',
-          id: media.id,
-          likes: newLikes,
-        },
-      },
-    })
-  }
 
   let mediaElements = []
   if (media) {
@@ -133,7 +96,8 @@ const MediaGallery = ({ mediaState, dispatchMedia }: MediaGalleryProps) => {
           }}
           clickLike={() => {
             likePressed({
-              media
+              media,
+              likeMedia,
             })
           }}
           clickPresent={() => {
