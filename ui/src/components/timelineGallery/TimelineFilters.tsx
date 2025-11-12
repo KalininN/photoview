@@ -100,10 +100,10 @@ const TimelineFilters = ({
     <div className="flex items-end gap-4 flex-wrap mb-4">
       <DateSelector filterDate={filterDate} setFilterDate={setFilterDate} />
       <RatingDropdown minRating={minRating} setMinRating={setMinRating} />
-      <FavoritesCheckbox
+      {/* <FavoritesCheckbox
         onlyFavorites={onlyFavorites}
         setOnlyFavorites={setOnlyFavorites}
-      />
+      /> */}
     </div>
   )
 }
