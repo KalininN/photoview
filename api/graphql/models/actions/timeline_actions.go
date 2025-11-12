@@ -43,8 +43,17 @@ func MyTimeline(db *gorm.DB, user *models.User, paginate *models.Pagination, min
 		query = query.Where("media.date_shot < ?", fromDate)
 	}
 
+	sanitizedRating := 5
 	if minRating != nil {
-		query = query.Where("media.rating >= ?", minRating)
+		sanitizedRating = *minRating
+		if sanitizedRating < 3 {
+			sanitizedRating = 3
+		} else if sanitizedRating > 5 {
+			sanitizedRating = 5
+		}
+	}
+	if minRating != nil {
+		query = query.Where("media.rating >= ?", sanitizedRating)
 	}
 
 	if onlyFavorites != nil && *onlyFavorites {
