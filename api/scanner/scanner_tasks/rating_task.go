@@ -9,7 +9,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/photoview/photoview/api/graphql/models"
-	"github.com/photoview/photoview/api/scanner/exif"
 	"github.com/photoview/photoview/api/scanner/scanner_task"
 )
 
@@ -55,18 +54,12 @@ func modifiedSince(path string, since time.Time) (bool, error) {
 	return stat.ModTime().After(since), nil
 }
 
-func saveEXIF(tx *gorm.DB, media *models.Media) error {
-	exif.ForgetCachedMetadata(media.Path)
-	_, err := exif.SaveEXIF(tx, media)
-	return err
-}
-
 // refreshEXIF re-parses EXIF for a media file that changed on disk, replacing the stored row.
 func refreshEXIF(tx *gorm.DB, media *models.Media) error {
 	oldExifID := media.ExifID
 	media.ExifID = nil
 
-	if err := saveEXIF(tx, media); err != nil {
+	if err := SaveEXIF(tx, media); err != nil {
 		media.ExifID = oldExifID
 		return err
 	}

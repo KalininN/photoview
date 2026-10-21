@@ -13,10 +13,12 @@
 export enum LanguageTranslation {
   Basque = "Basque",
   Danish = "Danish",
+  Dutch = "Dutch",
   English = "English",
   French = "French",
   German = "German",
   Italian = "Italian",
+  Japanese = "Japanese",
   Polish = "Polish",
   Portuguese = "Portuguese",
   Russian = "Russian",
