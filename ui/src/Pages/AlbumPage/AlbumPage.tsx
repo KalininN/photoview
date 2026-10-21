@@ -12,6 +12,7 @@ import { albumQuery, albumQueryVariables } from './__generated__/albumQuery'
 import useOrderingParams from '../../hooks/useOrderingParams'
 import { useParams } from 'react-router-dom'
 import { isNil } from '../../helpers/utils'
+import { minRatingParams } from '../../components/album/RatingDropdown'
 
 const ALBUM_QUERY = gql`
   ${ALBUM_GALLERY_FRAGMENT}
@@ -48,10 +49,7 @@ function AlbumPage() {
   const setOnlyFavorites = (favorites: boolean) =>
     urlParams.setParam('favorites', favorites ? '1' : '0')
 
-  const minRatingParam = urlParams.getParam('minRating')
-  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 5
-  const setMinRating = (rating: number) =>
-    urlParams.setParam('minRating', rating.toString())
+  const { minRating, setMinRating } = minRatingParams(urlParams)
 
   const { loading, error, data, refetch, fetchMore } = useQuery<
     albumQuery,

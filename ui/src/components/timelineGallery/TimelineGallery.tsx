@@ -18,6 +18,7 @@ import {
 import { urlPresentModeSetupHook } from '../photoGallery/mediaGalleryReducer'
 import TimelineFilters from './TimelineFilters'
 import client from '../../apolloClient'
+import { minRatingParams } from '../album/RatingDropdown'
 
 export const MY_TIMELINE_QUERY = gql`
   query myTimeline(
@@ -85,10 +86,7 @@ const TimelineGallery = () => {
   const setOnlyFavorites = (favorites: boolean) =>
     setParam('favorites', favorites ? '1' : null)
 
-  const minRatingParam = getParam('minRating')
-  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 5
-  const setMinRating = (rating: number) =>
-    setParam('minRating', rating.toString())
+  const { minRating, setMinRating } = minRatingParams({ getParam, setParam })
 
   const filterDate = getParam('date')
   const setFilterDate = (x: string) => setParam('date', x)

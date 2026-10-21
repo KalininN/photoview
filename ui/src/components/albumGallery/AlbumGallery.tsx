@@ -104,7 +104,6 @@ const AlbumGallery = React.forwardRef(
       subAlbumElement = <AlbumBoxes />
     }
 
-    console.info('showFilter', showFilter)
     return (
       <div ref={ref}>
         {showFilter && (
