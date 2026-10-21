@@ -8,8 +8,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func MyTimeline(db *gorm.DB, user *models.User, paginate *models.Pagination, minRating *int, onlyFavorites *bool,
-	fromDate *time.Time) ([]*models.Media, error) {
+func MyTimeline(db *gorm.DB, user *models.User, paginate *models.Pagination, onlyFavorites *bool,
+	fromDate *time.Time, minRating *int) ([]*models.Media, error) {
 
 	const albumsTitleASC = "albums.title ASC"
 
@@ -43,9 +43,7 @@ func MyTimeline(db *gorm.DB, user *models.User, paginate *models.Pagination, min
 		query = query.Where("media.date_shot < ?", fromDate)
 	}
 
-	if minRating != nil {
-		query = query.Where("media.rating >= ?", minRating)
-	}
+	query = models.FilterMinRating(query, minRating)
 
 	if onlyFavorites != nil && *onlyFavorites {
 		query = query.

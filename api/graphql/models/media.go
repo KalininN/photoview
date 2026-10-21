@@ -30,7 +30,7 @@ type Media struct {
 	SideCarHash     *string      `gorm:"unique"`
 	Faces           []*ImageFace `gorm:"constraint:OnDelete:CASCADE;"`
 	Blurhash        *string      `gorm:""`
-	Rating		    int64        `gorm:"default:3;index"`
+	Rating          int64        `gorm:"default:3;index"`
 }
 
 func (Media) TableName() string {

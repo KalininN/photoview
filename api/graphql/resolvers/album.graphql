@@ -8,6 +8,7 @@ type Album {
     paginate: Pagination
     "Return only the favorited media"
     onlyFavorites: Boolean
+    "Return only media rated at least this high"
     minRating: Int
   ): [Media!]!
 

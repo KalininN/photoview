@@ -31,20 +31,18 @@ func InitializeEXIFParser() {
 // SaveEXIF scans the media file for exif metadata and saves it in the database if found
 func SaveEXIF(tx *gorm.DB, media *models.Media) (*models.MediaEXIF, error) {
 
-	// Only called when media is new/updated
-	// {
-	// 	// Check if EXIF data already exists
-	// 	if media.ExifID != nil {
-	// 		log.Printf("Media %d already has EXIF data, skipping parsing\n", media.ID)
+	{
+		// Check if EXIF data already exists
+		if media.ExifID != nil {
 
-	// 		var exif models.MediaEXIF
-	// 		if err := tx.First(&exif, media.ExifID).Error; err != nil {
-	// 			return nil, errors.Wrap(err, "get EXIF for media from database")
-	// 		}
+			var exif models.MediaEXIF
+			if err := tx.First(&exif, media.ExifID).Error; err != nil {
+				return nil, errors.Wrap(err, "get EXIF for media from database")
+			}
 
-	// 		return &exif, nil
-	// 	}
-	// }
+			return &exif, nil
+		}
+	}
 
 	if globalExifParser == nil {
 		return nil, errors.New("No exif parser initialized")
@@ -68,13 +66,6 @@ func SaveEXIF(tx *gorm.DB, media *models.Media) (*models.MediaEXIF, error) {
 		media.DateShot = *exif.DateShot
 		if err := tx.Save(media).Error; err != nil {
 			return nil, errors.Wrap(err, "update media date_shot")
-		}
-	}
-
-	if exif.Rating != nil && *exif.Rating != media.Rating {
-		media.Rating = *exif.Rating
-		if err := tx.Save(media).Error; err != nil {
-			return nil, errors.Wrap(err, "update media rating")
 		}
 	}
 
