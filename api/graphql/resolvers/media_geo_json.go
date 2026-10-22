@@ -10,6 +10,7 @@ import (
 	"path"
 
 	"github.com/photoview/photoview/api/graphql/auth"
+	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/utils"
 )
 
@@ -30,7 +31,7 @@ func (r *queryResolver) MyMediaGeoJSON(ctx context.Context) (any, error) {
 		Joins("INNER JOIN media_exif ON media.exif_id = media_exif.id").
 		Joins("INNER JOIN media_urls ON media.id = media_urls.media_id").
 		Joins("INNER JOIN user_albums ON media.album_id = user_albums.album_id").
-		Where("media.rating >= 4").
+		Where("media.rating >= ?", models.MapMinRating).
 		Where("media_exif.gps_latitude IS NOT NULL").
 		Where("media_exif.gps_longitude IS NOT NULL").
 		Where("media_urls.purpose = 'thumbnail'").

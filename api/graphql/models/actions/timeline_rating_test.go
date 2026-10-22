@@ -25,6 +25,7 @@ func TestMyTimelineMinRating(t *testing.T) {
 
 	media := []models.Media{
 		{Title: "unrated", Path: "/photos/unrated", AlbumID: album.ID, DateShot: time.Unix(1632758400, 0)},
+		{Title: "two", Path: "/photos/two", AlbumID: album.ID, DateShot: time.Unix(1632758450, 0), Rating: 2},
 		{Title: "four", Path: "/photos/four", AlbumID: album.ID, DateShot: time.Unix(1632758500, 0), Rating: 4},
 		{Title: "five", Path: "/photos/five", AlbumID: album.ID, DateShot: time.Unix(1632758600, 0), Rating: 5},
 	}
@@ -43,8 +44,12 @@ func TestMyTimelineMinRating(t *testing.T) {
 
 	intPtr := func(v int) *int { return &v }
 
-	assert.ElementsMatch(t, []string{"unrated", "four", "five"}, titles(nil))
+	assert.ElementsMatch(t, []string{"unrated", "two", "four", "five"}, titles(nil))
 	assert.ElementsMatch(t, []string{"unrated", "four", "five"}, titles(intPtr(3)))
 	assert.ElementsMatch(t, []string{"four", "five"}, titles(intPtr(4)))
 	assert.ElementsMatch(t, []string{"five"}, titles(intPtr(5)))
+
+	// Filters are clamped to [3, 5]
+	assert.ElementsMatch(t, []string{"unrated", "four", "five"}, titles(intPtr(1)))
+	assert.ElementsMatch(t, []string{"five"}, titles(intPtr(9)))
 }

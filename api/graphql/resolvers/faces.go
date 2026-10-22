@@ -60,18 +60,8 @@ func (r *faceGroupResolver) ImageFaces(ctx context.Context, obj *models.FaceGrou
 		Where(faceGroupIDIsQuestion, obj.ID).
 		Where("album_id IN (?)", userAlbumIDs)
 
-	sanitizedRating := 5
-	if minRating != nil {
-		sanitizedRating = *minRating
-		if sanitizedRating < 3 {
-			sanitizedRating = 3
-		} else if sanitizedRating > 5 {
-			sanitizedRating = 5
-		}
-	}
-	if minRating != nil {
-		query = query.Where("rating >= ?", sanitizedRating)
-	}
+	// "Media" is the joined table's alias, so the column is not media.rating
+	query = models.FilterMinRatingColumn(query, "rating", minRating)
 
 	query = models.FormatSQL(query, nil, paginate)
 

@@ -3,6 +3,7 @@ import { useIsAdmin } from '../../../components/routes/AuthorizedRoute'
 import React, { useEffect, useReducer } from 'react'
 import { useTranslation } from 'react-i18next'
 import useURLParameters from '../../../hooks/useURLParameters'
+import { minRatingParams } from '../../../components/album/RatingDropdown'
 import PaginateLoader from '../../../components/PaginateLoader'
 import MediaGallery from '../../../components/photoGallery/MediaGallery'
 import { mediaGalleryReducer } from '../../../components/photoGallery/mediaGalleryReducer'
@@ -13,7 +14,6 @@ import {
   singleFaceGroupVariables,
   singleFaceGroup_faceGroup_imageFaces,
 } from './__generated__/singleFaceGroup'
-import { set } from 'husky'
 import { FaceGroupsWrapper } from '../PeoplePage'
 import { FaceCircleImage } from '../FaceCircleImage'
 
@@ -75,15 +75,7 @@ const SingleFaceGroup = ({ faceGroupID }: SingleFaceGroupProps) => {
 
   const { getParam, setParam } = useURLParameters()
 
-  const sanitizeRating = (rating: number) => {
-    return Math.max(Math.min(rating, 5), 3)
-  }
-
-  const minRatingParam = getParam('minRating')
-  const minRating = sanitizeRating(minRatingParam !== null ? parseInt(minRatingParam, 10) : 5)
-  const setMinRating = (rating: number) => {
-    setParam('minRating', sanitizeRating(rating).toString())
-  }
+  const { minRating, setMinRating } = minRatingParams({ getParam, setParam })
 
   const { data, error, loading, refetch, fetchMore } = useQuery<
     singleFaceGroup,
