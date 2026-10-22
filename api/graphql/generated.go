@@ -209,7 +209,7 @@ type ComplexityRoot struct {
 		MyFaceGroups               func(childComplexity int, paginate *models.Pagination) int
 		MyMedia                    func(childComplexity int, order *models.Ordering, paginate *models.Pagination) int
 		MyMediaGeoJSON             func(childComplexity int) int
-		MyTimeline                 func(childComplexity int, paginate *models.Pagination, onlyFavorites *bool, minRating *int, fromDate *time.Time) int
+		MyTimeline                 func(childComplexity int, paginate *models.Pagination, onlyFavorites *bool, fromDate *time.Time, minRating *int) int
 		MyUser                     func(childComplexity int) int
 		MyUserPreferences          func(childComplexity int) int
 		Search                     func(childComplexity int, query string, limitMedia *int, limitAlbums *int) int
@@ -365,7 +365,7 @@ type QueryResolver interface {
 	ShareToken(ctx context.Context, credentials models.ShareTokenCredentials) (*models.ShareToken, error)
 	ShareTokenValidatePassword(ctx context.Context, credentials models.ShareTokenCredentials) (bool, error)
 	SiteInfo(ctx context.Context) (*models.SiteInfo, error)
-	MyTimeline(ctx context.Context, paginate *models.Pagination, onlyFavorites *bool, minRating *int, fromDate *time.Time) ([]*models.Media, error)
+	MyTimeline(ctx context.Context, paginate *models.Pagination, onlyFavorites *bool, fromDate *time.Time, minRating *int) ([]*models.Media, error)
 	User(ctx context.Context, order *models.Ordering, paginate *models.Pagination) ([]*models.User, error)
 	MyUser(ctx context.Context) (*models.User, error)
 	MyUserPreferences(ctx context.Context) (*models.UserPreferences, error)
@@ -1384,7 +1384,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.MyTimeline(childComplexity, args["paginate"].(*models.Pagination), args["onlyFavorites"].(*bool), args["minRating"].(*int), args["fromDate"].(*time.Time)), true
+		return e.complexity.Query.MyTimeline(childComplexity, args["paginate"].(*models.Pagination), args["onlyFavorites"].(*bool), args["fromDate"].(*time.Time), args["minRating"].(*int)), true
 
 	case "Query.myUser":
 		if e.complexity.Query.MyUser == nil {
@@ -3698,16 +3698,16 @@ func (ec *executionContext) field_Query_myTimeline_args(ctx context.Context, raw
 		return nil, err
 	}
 	args["onlyFavorites"] = arg1
-	arg2, err := ec.field_Query_myTimeline_argsMinRating(ctx, rawArgs)
+	arg2, err := ec.field_Query_myTimeline_argsFromDate(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["minRating"] = arg2
-	arg3, err := ec.field_Query_myTimeline_argsFromDate(ctx, rawArgs)
+	args["fromDate"] = arg2
+	arg3, err := ec.field_Query_myTimeline_argsMinRating(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["fromDate"] = arg3
+	args["minRating"] = arg3
 	return args, nil
 }
 func (ec *executionContext) field_Query_myTimeline_argsPaginate(
@@ -3746,24 +3746,6 @@ func (ec *executionContext) field_Query_myTimeline_argsOnlyFavorites(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Query_myTimeline_argsMinRating(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (*int, error) {
-	if _, ok := rawArgs["minRating"]; !ok {
-		var zeroVal *int
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("minRating"))
-	if tmp, ok := rawArgs["minRating"]; ok {
-		return ec.unmarshalOInt2ᚖint(ctx, tmp)
-	}
-
-	var zeroVal *int
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Query_myTimeline_argsFromDate(
 	ctx context.Context,
 	rawArgs map[string]any,
@@ -3779,6 +3761,24 @@ func (ec *executionContext) field_Query_myTimeline_argsFromDate(
 	}
 
 	var zeroVal *time.Time
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_myTimeline_argsMinRating(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*int, error) {
+	if _, ok := rawArgs["minRating"]; !ok {
+		var zeroVal *int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("minRating"))
+	if tmp, ok := rawArgs["minRating"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
 	return zeroVal, nil
 }
 
@@ -11355,7 +11355,7 @@ func (ec *executionContext) _Query_myTimeline(ctx context.Context, field graphql
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().MyTimeline(rctx, fc.Args["paginate"].(*models.Pagination), fc.Args["onlyFavorites"].(*bool), fc.Args["minRating"].(*int), fc.Args["fromDate"].(*time.Time))
+			return ec.resolvers.Query().MyTimeline(rctx, fc.Args["paginate"].(*models.Pagination), fc.Args["onlyFavorites"].(*bool), fc.Args["fromDate"].(*time.Time), fc.Args["minRating"].(*int))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {

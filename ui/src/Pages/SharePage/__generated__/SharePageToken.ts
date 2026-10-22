@@ -151,6 +151,10 @@ export interface SharePageToken_shareToken_media_exif {
    * GPS coordinates of where the image was taken
    */
   coordinates: SharePageToken_shareToken_media_exif_coordinates | null;
+  /**
+   * Manually assigned user rating
+   */
+  rating: number | null;
 }
 
 export interface SharePageToken_shareToken_media {

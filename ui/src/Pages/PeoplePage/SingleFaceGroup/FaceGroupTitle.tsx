@@ -20,7 +20,7 @@ import MergeFaceGroupsModal, {
 } from './MergeFaceGroupsModal'
 import MoveImageFacesModal from './MoveImageFacesModal'
 import { singleFaceGroup_faceGroup } from './__generated__/singleFaceGroup'
-import { RatingDropdownProps, RatingDropdown } from '../../../components/album/AlbumFilter'
+import { RatingDropdownProps, RatingDropdown } from '../../../components/album/RatingDropdown'
 
 
 type FaceGroupTitleProps = {

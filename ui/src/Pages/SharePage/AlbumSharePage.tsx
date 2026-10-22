@@ -9,6 +9,7 @@ import useOrderingParams from '../../hooks/useOrderingParams'
 import { shareAlbumQuery } from './__generated__/shareAlbumQuery'
 import useScrollPagination from '../../hooks/useScrollPagination'
 import PaginateLoader from '../../components/PaginateLoader'
+import { minRatingParams } from '../../components/album/RatingDropdown'
 
 export const SHARE_ALBUM_QUERY = gql`
   query shareAlbumQuery(
@@ -107,14 +108,10 @@ const AlbumSharePage = ({ albumID, token, password }: AlbumSharePageProps) => {
   const urlParams = useURLParameters()
   const orderParams = useOrderingParams(urlParams)
 
-  const minRatingParam = urlParams.getParam('minRating')
-  const minRating = minRatingParam !== null ? parseInt(minRatingParam, 10) : 5
-  const setMinRating = (rating: number) =>
-    urlParams.setParam('minRating', rating.toString())
+  const { minRating, setMinRating } = minRatingParams(urlParams)
 
-  const { data, error, loading, refetch, fetchMore } = useQuery<shareAlbumQuery>(
-    SHARE_ALBUM_QUERY,
-    {
+  const { data, error, loading, refetch, fetchMore } =
+    useQuery<shareAlbumQuery>(SHARE_ALBUM_QUERY, {
       variables: {
         id: albumID,
         token,
@@ -123,10 +120,9 @@ const AlbumSharePage = ({ albumID, token, password }: AlbumSharePageProps) => {
         offset: 0,
         mediaOrderBy: orderParams.orderBy,
         mediaOrderDirection: orderParams.orderDirection,
-        minRating
+        minRating,
       },
-    }
-  )
+    })
 
   const { containerElem, finished: finishedLoadingMore } =
     useScrollPagination<shareAlbumQuery>({

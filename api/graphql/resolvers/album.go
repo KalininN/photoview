@@ -39,16 +39,7 @@ func (r *albumResolver) Media(ctx context.Context, obj *models.Album, order *mod
 		query = query.Where("EXISTS (?)", favoriteQuery)
 	}
 
-	sanitizedRating := 5
-	if minRating != nil {
-		sanitizedRating = *minRating
-		if sanitizedRating < 3 {
-			sanitizedRating = 3
-		} else if sanitizedRating > 5 {
-			sanitizedRating = 5
-		}
-	}
-	query = query.Where("media.rating >= ?", sanitizedRating)
+	query = models.FilterMinRating(query, minRating)
 
 	query = models.FormatSQL(query, order, paginate)
 
