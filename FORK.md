@@ -37,6 +37,17 @@ Hooks in upstream files:
 - UI: `AlbumFilter.tsx`, `AlbumGallery.tsx`, `AlbumPage.tsx`, `AlbumSharePage.tsx`, `SharePage.tsx`,
   `TimelineFilters.tsx`, `TimelineGallery.tsx`, `MediaSidebar.tsx`, `MediaSidebarExif.tsx` and two test fixtures
 
+### GPS longitude up to ±180 in the GPS migration
+
+`api/database/migrations/exif_invalid_gps.go` (and its test) only clears longitudes beyond ±180.
+Upstream still clears everything beyond ±90 on every startup, which deletes valid coordinates;
+this is worth sending upstream. (The scanner side of this fix is upstream as
+[#1260](https://github.com/photoview/photoview/pull/1260).)
+
+### Build script
+
+`build_and_push.sh` builds the Docker image and pushes it as `kalininn/photoview:latest`.
+
 ## Syncing with upstream
 
 ```bash
