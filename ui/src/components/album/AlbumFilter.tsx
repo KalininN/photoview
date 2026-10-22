@@ -158,12 +158,12 @@ const AlbumFilter = ({
         />
       ) : null}
       <RatingDropdown minRating={minRating} setMinRating={setMinRating} />
-      {authToken() && setOnlyFavorites && (
+      {/* {authToken() && setOnlyFavorites && (
         <FavoritesCheckbox
           onlyFavorites={onlyFavorites}
           setOnlyFavorites={setOnlyFavorites}
         />
-      )}
+      )} */}
     </div>
   )
 }

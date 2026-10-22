@@ -11,9 +11,9 @@ export interface setGroupLabel_setFaceGroupLabel {
   __typename: "FaceGroup";
   id: string;
   /**
-   * The name of the person
+   * The display name
    */
-  label: string | null;
+  displayLabel: string | null;
 }
 
 export interface setGroupLabel {
@@ -25,5 +25,5 @@ export interface setGroupLabel {
 
 export interface setGroupLabelVariables {
   groupID: string;
-  label?: string | null;
+  displayLabel?: string | null;
 }

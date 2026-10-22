@@ -89,6 +89,10 @@ export interface albumQuery_album_media {
    */
   videoWeb: albumQuery_album_media_videoWeb | null;
   favorite: boolean;
+  /**
+   * Number of likes
+   */
+  likes: number | null;
 }
 
 export interface albumQuery_album {

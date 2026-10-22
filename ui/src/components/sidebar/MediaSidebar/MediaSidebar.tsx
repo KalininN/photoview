@@ -1,4 +1,5 @@
 import { gql, useLazyQuery } from '@apollo/client'
+import { useIsAdmin } from '../../../components/routes/AuthorizedRoute'
 import React, { useEffect, useContext } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -102,6 +103,7 @@ export const SIDEBAR_MEDIA_QUERY = gql`
         faceGroup {
           id
           label
+          displayLabel
           imageFaceCount
         }
         media {
@@ -167,8 +169,7 @@ const SidebarContent = ({ media, hidePreview }: SidebarContentProps) => {
 	const { updateSidebar } = useContext(SidebarContext)
   const { t } = useTranslation()
   let previewImage = null
-  if (media.highRes) previewImage = media.highRes
-  else if (media.thumbnail) previewImage = media.thumbnail
+  if (media.thumbnail) previewImage = media.thumbnail
 
   const imageAspect =
     previewImage?.width && previewImage?.height
@@ -184,7 +185,6 @@ const SidebarContent = ({ media, hidePreview }: SidebarContentProps) => {
   let albumPath = null
   const mediaAlbum = media.album
   if (!isNil(mediaAlbum)) {
-    console.log('PATH reversed', mediaAlbum.path ?? [])
     const pathElms = [
       ...[...(mediaAlbum.path ?? [])].reverse(),
       mediaAlbum,
@@ -210,6 +210,7 @@ const SidebarContent = ({ media, hidePreview }: SidebarContentProps) => {
     )
   }
 
+  const isAdmin = useIsAdmin()
   return (
     <div>
       <SidebarHeader title={media.title ?? 'Loading...'} />
@@ -233,9 +234,10 @@ const SidebarContent = ({ media, hidePreview }: SidebarContentProps) => {
       {sidebarMap}
       <SidebarMediaDownload media={media} />
       <SidebarPhotoShare id={media.id} />
+      {isAdmin && (
       <div className="mt-8">
         <SidebarPhotoCover cover_id={media.id} />
-      </div>
+      </div>)}
     </div>
   )
 }

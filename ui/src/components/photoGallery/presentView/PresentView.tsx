@@ -153,6 +153,7 @@ const PresentView = ({
           // either way.
           setPinned(true)
         }}
+        media={activeMedia}
       >
         <PresentMedia media={activeMedia} imageLoaded={imageLoaded} />
       </PresentNavigationOverlay>

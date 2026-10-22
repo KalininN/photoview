@@ -17,6 +17,7 @@ describe('timeline gallery reducer', () => {
       media: -1,
     },
     timelineGroups: [],
+    timelineMediaIds: [],
   }
 
   const originalZone = Settings.defaultZone
@@ -222,6 +223,7 @@ describe('timeline gallery reducer', () => {
       highRes: null,
       videoWeb: null,
       favorite: false,
+      likes: 0,
       album,
       date,
     })

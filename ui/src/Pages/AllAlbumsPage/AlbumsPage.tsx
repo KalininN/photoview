@@ -7,6 +7,7 @@ import { getMyAlbums, getMyAlbumsVariables } from './__generated__/getMyAlbums'
 import useURLParameters from '../../hooks/useURLParameters'
 import useOrderingParams from '../../hooks/useOrderingParams'
 import AlbumFilter from '../../components/album/AlbumFilter'
+import { OrderDirection } from '../../__generated__/globalTypes'
 
 const getAlbumsQuery = gql`
   query getMyAlbums($orderBy: String, $orderDirection: OrderDirection) {
@@ -31,7 +32,12 @@ const AlbumsPage = () => {
   const { t } = useTranslation()
 
   const urlParams = useURLParameters()
-  const orderParams = useOrderingParams(urlParams, 'updated_at')
+  // Fork-specific: newest titles (dates) first by default
+  const orderParams = useOrderingParams(
+    urlParams,
+    'title',
+    OrderDirection.DESC
+  )
 
   const { error, data } = useQuery<getMyAlbums, getMyAlbumsVariables>(
     getAlbumsQuery,

@@ -5,6 +5,12 @@ import { MediaType } from '../../../__generated__/globalTypes'
 import { MediaGalleryFields } from '../__generated__/MediaGalleryFields'
 import { SidebarContext } from '../../sidebar/Sidebar'
 import PresentView from './PresentView'
+import { MockedProvider } from '@apollo/client/testing'
+
+// Fork-specific: the overlay's like button needs an Apollo client
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <MockedProvider>{children}</MockedProvider>
+)
 
 const makeMedia = (id: string): MediaGalleryFields => ({
   __typename: 'Media',
@@ -14,6 +20,7 @@ const makeMedia = (id: string): MediaGalleryFields => ({
   blurhash: null,
   videoWeb: null,
   favorite: false,
+  likes: 0,
   thumbnail: {
     __typename: 'MediaURL',
     url: `/photo-${id}.jpg`,
@@ -38,7 +45,8 @@ const renderWithSidebar = (media: MediaGalleryFields) => {
       }}
     >
       <PresentView activeMedia={media} dispatchMedia={vi.fn()} />
-    </SidebarContext.Provider>
+    </SidebarContext.Provider>,
+    { wrapper }
   )
 
   const rerender = (next: MediaGalleryFields, nextContent: React.ReactNode) => {
@@ -116,7 +124,8 @@ test('arrow keys navigate and escape leaves the viewer', () => {
         dispatchMedia={dispatchMedia}
         disableSaveCloseInHistory
       />
-    </SidebarContext.Provider>
+    </SidebarContext.Provider>,
+    { wrapper }
   )
 
   act(() => {
@@ -146,7 +155,8 @@ test('escape without the history flag steps back instead', () => {
       }}
     >
       <PresentView activeMedia={makeMedia('1')} dispatchMedia={dispatchMedia} />
-    </SidebarContext.Provider>
+    </SidebarContext.Provider>,
+    { wrapper }
   )
 
   fireEvent.keyDown(document, { key: 'Escape' })

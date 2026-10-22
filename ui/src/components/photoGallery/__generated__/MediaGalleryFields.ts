@@ -62,4 +62,8 @@ export interface MediaGalleryFields {
    */
   videoWeb: MediaGalleryFields_videoWeb | null;
   favorite: boolean;
+  /**
+   * Number of likes
+   */
+  likes: number | null;
 }

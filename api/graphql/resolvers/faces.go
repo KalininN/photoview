@@ -16,8 +16,27 @@ import (
 	"gorm.io/gorm"
 )
 
+// Thumbnail is the resolver for the thumbnail field.
+func (r *faceGroupResolver) Thumbnail(ctx context.Context, obj *models.FaceGroup) (*models.ImageFace, error) {
+	db := r.DB(ctx)
+
+	var image_face models.ImageFace
+
+	if obj.CoverID != nil {
+		if err := db.First(&image_face, *obj.CoverID).Error; err == nil {
+			return &image_face, nil
+		}
+	}
+
+	if err := db.Joins("Media").Where(faceGroupIDIsQuestion, obj.ID).Order("rating desc").First(&image_face).Error; err != nil {
+		return nil, err
+	}
+
+	return &image_face, nil
+}
+
 // ImageFaces is the resolver for the imageFaces field.
-func (r *faceGroupResolver) ImageFaces(ctx context.Context, obj *models.FaceGroup, paginate *models.Pagination) ([]*models.ImageFace, error) {
+func (r *faceGroupResolver) ImageFaces(ctx context.Context, obj *models.FaceGroup, minRating *int, paginate *models.Pagination) ([]*models.ImageFace, error) {
 	db := r.DB(ctx)
 	user := auth.UserFromContext(ctx)
 	if user == nil {
@@ -41,6 +60,9 @@ func (r *faceGroupResolver) ImageFaces(ctx context.Context, obj *models.FaceGrou
 		Joins("Media").
 		Where(faceGroupIDIsQuestion, obj.ID).
 		Where("album_id IN (?)", userAlbumIDs)
+
+	// "Media" is the joined table's alias, so the column is not media.rating
+	query = models.FilterMinRatingColumn(query, "rating", minRating)
 
 	query = models.FormatSQL(query, nil, paginate)
 
@@ -117,7 +139,7 @@ func (r *imageFaceResolver) FaceGroup(ctx context.Context, obj *models.ImageFace
 }
 
 // SetFaceGroupLabel is the resolver for the setFaceGroupLabel field.
-func (r *mutationResolver) SetFaceGroupLabel(ctx context.Context, faceGroupID int, label *string) (*models.FaceGroup, error) {
+func (r *mutationResolver) SetFaceGroupLabel(ctx context.Context, faceGroupID int, displayLabel *string) (*models.FaceGroup, error) {
 	db := r.DB(ctx)
 	user := auth.UserFromContext(ctx)
 	if user == nil {
@@ -133,7 +155,62 @@ func (r *mutationResolver) SetFaceGroupLabel(ctx context.Context, faceGroupID in
 		return nil, err
 	}
 
-	if err := db.Model(faceGroup).Update("label", label).Error; err != nil {
+	if err := db.Model(faceGroup).Update("display_label", displayLabel).Error; err != nil {
+		return nil, err
+	}
+
+	return faceGroup, nil
+}
+
+// SetFaceGroupCover is the resolver for the setFaceGroupCover field.
+func (r *mutationResolver) SetFaceGroupCover(ctx context.Context, faceGroupID int, faceID int) (*models.FaceGroup, error) {
+	db := r.DB(ctx)
+	user := auth.UserFromContext(ctx)
+	if user == nil {
+		return nil, errors.New("unauthorized")
+	}
+
+	if face_detection.GlobalFaceDetector == nil {
+		return nil, ErrFaceDetectorNotInitialized
+	}
+
+	faceGroup, err := userOwnedFaceGroup(db, user, faceGroupID)
+	if err != nil {
+		return nil, err
+	}
+
+	var image_face models.ImageFace
+
+	if err := db.First(&image_face, faceID).Error; err != nil {
+		return nil, err
+	}
+
+	if image_face.FaceGroupID != faceGroup.ID {
+		return nil, errors.New("the face does not belong to this face group")
+	}
+
+	var media models.Media
+
+	if err := db.First(&media, image_face.MediaID).Error; err != nil {
+		return nil, err
+	}
+
+	var album models.Album
+
+	if err := db.First(&album, media.AlbumID).Error; err != nil {
+		return nil, err
+	}
+
+	ownsAlbum, err := user.OwnsAlbum(db, &album)
+	if err != nil {
+		return nil, err
+	}
+
+	if !ownsAlbum {
+		return nil, errors.New("forbidden")
+	}
+
+	if err := db.Model(faceGroup).Update("cover_id", faceID).Error; err != nil {
 		return nil, err
 	}
 

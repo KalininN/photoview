@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo "🔄 Generating code..."
+cd api && go generate ./... && cd ..
+cd ui && npm run-script genSchemaTypes && cd ..
+
 # --- Configuration ---
 IMAGE_NAME="kalininn/photoview"
 IMAGE_TAG="latest"   # or e.g. "$(date +%Y%m%d)" for date-based tags

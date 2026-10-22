@@ -42,7 +42,7 @@ services:
       - -c
       - |
         export $(cat /env)
-        reflex -g '*.go' -s -- go run .
+        reflex -r '\.go$' -s -- go run -tags faces_exif .
 
   mariadb:
     image: mariadb:lts

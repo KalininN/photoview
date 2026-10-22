@@ -2,6 +2,34 @@ import React from 'react'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import PresentNavigationOverlay from './PresentNavigationOverlay'
+import { MockedProvider } from '@apollo/client/testing'
+import { MediaType } from '../../../__generated__/globalTypes'
+import { MediaGalleryFields } from '../__generated__/MediaGalleryFields'
+
+// Fork-specific: the overlay shows a like button for the media
+const media: MediaGalleryFields = {
+  __typename: 'Media',
+  id: '1',
+  type: MediaType.Photo,
+  blurhash: null,
+  thumbnail: null,
+  highRes: null,
+  videoWeb: null,
+  favorite: false,
+  likes: 0,
+}
+
+const renderOverlay = (
+  props: Omit<
+    React.ComponentProps<typeof PresentNavigationOverlay>,
+    'media'
+  >
+) =>
+  render(
+    <MockedProvider>
+      <PresentNavigationOverlay {...props} media={media} />
+    </MockedProvider>
+  )
 
 const hidden = (label: string) =>
   screen.getByLabelText(label).classList.contains('hide')
@@ -15,7 +43,7 @@ afterEach(() => {
 })
 
 test('a key press reveals the controls and they hide themselves again', () => {
-  render(<PresentNavigationOverlay dispatchMedia={vi.fn()} />)
+  renderOverlay({ dispatchMedia: vi.fn() })
 
   expect(hidden('Exit presentation mode')).toBe(true)
 
@@ -38,7 +66,7 @@ test('a key press reveals the controls and they hide themselves again', () => {
 })
 
 test('a tap reveals the controls and repeated taps keep them visible', () => {
-  render(<PresentNavigationOverlay dispatchMedia={vi.fn()} />)
+  renderOverlay({ dispatchMedia: vi.fn() })
 
   fireEvent.click(screen.getByTestId('present-overlay'))
   expect(hidden('Next image')).toBe(false)
@@ -64,7 +92,7 @@ test('a horizontal swipe navigates between images', () => {
   vi.useRealTimers()
 
   const dispatchMedia = vi.fn()
-  render(<PresentNavigationOverlay dispatchMedia={dispatchMedia} />)
+  renderOverlay({ dispatchMedia })
 
   const surface = screen.getByTestId('present-overlay').firstElementChild
   if (surface == null) throw new Error('swipe surface not found')
@@ -94,7 +122,7 @@ test('the exit button leaves the viewer and steps back in history', async () => 
     .spyOn(window.history, 'back')
     .mockImplementation(() => undefined)
 
-  render(<PresentNavigationOverlay dispatchMedia={dispatchMedia} />)
+  renderOverlay({ dispatchMedia })
 
   // Hidden controls take no clicks, so the first tap is the one that reveals
   // them - the same two steps a touch user takes.
@@ -116,12 +144,7 @@ test('the exit button leaves history alone when the caller asks it to', async ()
     .spyOn(window.history, 'back')
     .mockImplementation(() => undefined)
 
-  render(
-    <PresentNavigationOverlay
-      dispatchMedia={dispatchMedia}
-      disableSaveCloseInHistory
-    />
-  )
+  renderOverlay({ dispatchMedia, disableSaveCloseInHistory: true })
 
   fireEvent.click(screen.getByTestId('present-overlay'))
   await userEvent.click(screen.getByLabelText('Exit presentation mode'))

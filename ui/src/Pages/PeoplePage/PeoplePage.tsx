@@ -1,4 +1,5 @@
 import React, { createRef, useEffect, useState } from 'react'
+import { useIsAdmin } from '../../components/routes/AuthorizedRoute'
 import { gql, useMutation, useQuery } from '@apollo/client'
 import Layout from '../../components/layout/Layout'
 import styled from 'styled-components'
@@ -30,8 +31,8 @@ export const MY_FACES_QUERY = gql`
     myFaceGroups(paginate: { limit: $limit, offset: $offset }) {
       id
       label
-      imageFaceCount
-      imageFaces(paginate: { limit: 1 }) {
+      displayLabel
+      thumbnail {
         id
         rectangle {
           minX
@@ -49,15 +50,16 @@ export const MY_FACES_QUERY = gql`
           }
         }
       }
+      imageFaceCount
     }
   }
 `
 
 export const SET_GROUP_LABEL_MUTATION = gql`
-  mutation setGroupLabel($groupID: ID!, $label: String) {
-    setFaceGroupLabel(faceGroupID: $groupID, label: $label) {
+  mutation setGroupLabel($groupID: ID!, $displayLabel: String) {
+    setFaceGroupLabel(faceGroupID: $groupID, displayLabel: $displayLabel) {
       id
-      label
+      displayLabel
     }
   }
 `
@@ -106,7 +108,7 @@ type FaceDetailsProps = {
   group: {
     __typename: 'FaceGroup'
     id: string
-    label: string | null
+    displayLabel: string | null
     imageFaceCount: number
   }
   className?: string
@@ -123,7 +125,7 @@ export const FaceDetails = ({
   setEditLabel,
 }: FaceDetailsProps) => {
   const { t } = useTranslation()
-  const [inputValue, setInputValue] = useState(group.label ?? '')
+  const [inputValue, setInputValue] = useState(group.displayLabel ?? '')
   const inputRef = createRef<HTMLInputElement>()
 
   const [setGroupLabel, { loading }] = useMutation<
@@ -136,7 +138,7 @@ export const FaceDetails = ({
   })
 
   const resetLabel = () => {
-    setInputValue(group.label ?? '')
+    setInputValue(group.displayLabel ?? '')
     setEditLabel(false)
   }
 
@@ -157,6 +159,7 @@ export const FaceDetails = ({
     }
   }
 
+  const isAdmin = useIsAdmin()
   let label
   if (!editLabel) {
     label = (
@@ -165,19 +168,19 @@ export const FaceDetails = ({
           className,
           'whitespace-nowrap inline-block overflow-hidden overflow-clip'
         )}
-        labeled={!!group.label}
-        onClick={() => setEditLabel(true)}
+        labeled={!!group.displayLabel}
+        onClick={() => isAdmin && setEditLabel(true)}
       >
         <FaceImagesCount>{group.imageFaceCount}</FaceImagesCount>
         <button className="">
-          {group.label ?? t('people_page.face_group.unlabeled', 'Unlabeled')}
+          {group.displayLabel ?? t('people_page.face_group.unlabeled', 'Unlabeled')}
         </button>
         {/* <EditIcon name="pencil" /> */}
       </FaceDetailsWrapper>
     )
   } else {
     label = (
-      <FaceDetailsWrapper className={className} labeled={!!group.label}>
+      <FaceDetailsWrapper className={className} labeled={!!group.displayLabel}>
         <TextField
           className={textFieldClassName}
           loading={loading}
@@ -190,7 +193,7 @@ export const FaceDetails = ({
             setGroupLabel({
               variables: {
                 groupID: group.id,
-                label: inputValue == '' ? null : inputValue,
+                displayLabel: inputValue == '' ? null : inputValue,
               },
             })
           }
@@ -217,7 +220,7 @@ type FaceGroupProps = {
 }
 
 export const FaceGroup = ({ group }: FaceGroupProps) => {
-  const previewFace = group.imageFaces[0]
+  const previewFace = group.thumbnail
   const [editLabel, setEditLabel] = useState(false)
 
   return (
@@ -236,7 +239,7 @@ export const FaceGroup = ({ group }: FaceGroupProps) => {
   )
 }
 
-const FaceGroupsWrapper = styled.div`
+export const FaceGroupsWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
   margin-top: 24px;
@@ -277,6 +280,7 @@ export const PeoplePage = () => {
   }
 
   let faces: JSX.Element[] | null = null
+  const isAdmin = useIsAdmin()
   if (data) {
     faces = data.myFaceGroups.map(faceGroup => (
       <FaceGroup key={faceGroup.id} group={faceGroup} />
@@ -284,20 +288,24 @@ export const PeoplePage = () => {
   }
 
   let modals = null
-  modals = (
-    <MergeFaceGroupsModal
-      state={mergeModalState}
-      setState={setMergeModalState}
-      refetchQueries={[
-        {
-          query: MY_FACES_QUERY,
-        },
-      ]}
-    />
-  )
+  if (isAdmin)
+  {
+    modals = (
+      <MergeFaceGroupsModal
+        state={mergeModalState}
+        setState={setMergeModalState}
+        refetchQueries={[
+          {
+            query: MY_FACES_QUERY,
+          },
+        ]}
+      />
+    )
+  }
 
   return (
     <Layout title={t('title.people', 'People')}>
+      {isAdmin && (
       <ul className="flex gap-2 flex-wrap mb-6">
         <li>
           <Button
@@ -323,7 +331,7 @@ export const PeoplePage = () => {
             {t('people_page.action_label.merge_people', 'Merge people')}
           </Button>
         </li>
-      </ul>
+      </ul>)}
       
       <FaceGroupsWrapper ref={containerElem}>{faces}</FaceGroupsWrapper>
       <PaginateLoader

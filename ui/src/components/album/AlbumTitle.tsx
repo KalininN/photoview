@@ -1,16 +1,20 @@
 import React, { useEffect, useContext } from 'react'
 import { Link } from 'react-router-dom'
 import styled from 'styled-components'
+import { useIsAdmin } from '../routes/AuthorizedRoute'
 import { SidebarContext } from '../sidebar/Sidebar'
 import AlbumSidebar from '../sidebar/AlbumSidebar'
-import { useLazyQuery, gql } from '@apollo/client'
+import { useLazyQuery, gql, useMutation } from '@apollo/client'
 import { authToken } from '../../helpers/authentication'
 import { albumPathQuery } from './__generated__/albumPathQuery'
+import { setAlbumTitle, setAlbumTitleVariables } from './__generated__/setAlbumTitle'
+import { resetAlbumTitle, resetAlbumTitleVariables } from './__generated__/resetAlbumTitle'
 import useDelay from '../../hooks/useDelay'
 
 import { ReactComponent as GearIcon } from './icons/gear.svg'
 import { tailwindClassNames } from '../../helpers/utils'
 import { buttonStyles } from '../../primitives/form/Input'
+import LabelEditable from '../../primitives/LabelEditable'
 
 export const BreadcrumbList = styled.ol<{ hideLastArrow?: boolean }>`
   &
@@ -38,6 +42,23 @@ const ALBUM_PATH_QUERY = gql`
   }
 `
 
+const SET_ALBUM_TITLE_MUTATION = gql`
+  mutation setAlbumTitle($albumID: ID!, $title: String!) {
+    setAlbumTitle(albumID: $albumID, title: $title) {
+      id
+      title
+    }
+  }
+`
+
+const RESET_ALBUM_TITLE_MUTATION = gql`
+  mutation resetAlbumTitle($albumID: ID!) {
+    resetAlbumTitle(albumID: $albumID) {
+      id
+    }
+  }
+`
+
 type AlbumTitleProps = {
   album?: {
     id: string
@@ -50,6 +71,8 @@ const AlbumTitle = ({ album, disableLink = false }: AlbumTitleProps) => {
   const [fetchPath, { data: pathData }] =
     useLazyQuery<albumPathQuery>(ALBUM_PATH_QUERY)
   const { updateSidebar } = useContext(SidebarContext)
+
+  const isAdmin = useIsAdmin()
 
   useEffect(() => {
     if (!album) return
@@ -64,6 +87,12 @@ const AlbumTitle = ({ album, disableLink = false }: AlbumTitleProps) => {
   }, [album])
 
   const delay = useDelay(200, [album])
+
+  const [setAlbumTitle] = useMutation<setAlbumTitle, setAlbumTitleVariables>(
+    SET_ALBUM_TITLE_MUTATION)
+  
+  const [resetAlbumTitle] = useMutation<resetAlbumTitle, resetAlbumTitleVariables>(
+    RESET_ALBUM_TITLE_MUTATION)
 
   if (!album) {
     return (
@@ -94,6 +123,33 @@ const AlbumTitle = ({ album, disableLink = false }: AlbumTitleProps) => {
   if (!disableLink) {
     title = <Link to={`/album/${album.id}`}>{title}</Link>
   }
+  
+  if (isAdmin) { 
+    title = <LabelEditable
+      className="text-2xl truncate min-w-0"
+      value={album.title}
+      onSave={newTitle => {
+        if (newTitle === album.title) return
+        if (!newTitle)
+        {
+          resetAlbumTitle({
+            variables: {
+              albumID: album.id,
+            },
+          })          
+          return
+        }
+        setAlbumTitle({
+          variables: {
+            albumID: album.id,
+            title: newTitle,
+          },
+        })
+      }}
+    />
+  } else { 
+    title = (<h1 className="text-2xl truncate min-w-0">{title}</h1>)
+  }
 
   return (
     <div className="flex mb-6 items-end h-14">
@@ -101,7 +157,7 @@ const AlbumTitle = ({ album, disableLink = false }: AlbumTitleProps) => {
         <nav aria-label="Album breadcrumb">
           <BreadcrumbList>{breadcrumbSections}</BreadcrumbList>
         </nav>
-        <h1 className="text-2xl truncate min-w-0">{title}</h1>
+        {title}
       </div>
       {authToken() && (
         <button

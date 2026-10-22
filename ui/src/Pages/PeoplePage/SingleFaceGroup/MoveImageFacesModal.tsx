@@ -12,7 +12,7 @@ import {
   myFaces,
   myFacesVariables,
   myFaces_myFaceGroups,
-  myFaces_myFaceGroups_imageFaces,
+  myFaces_myFaceGroups_thumbnail,
 } from '../__generated__/myFaces'
 import { isNil } from '../../../helpers/utils'
 import {
@@ -42,7 +42,7 @@ type MoveImageFacesModalProps = {
   faceGroup: singleFaceGroup_faceGroup
   preselectedImageFaces?: (
     | singleFaceGroup_faceGroup_imageFaces
-    | myFaces_myFaceGroups_imageFaces
+    | myFaces_myFaceGroups_thumbnail
   )[]
 }
 
@@ -55,7 +55,7 @@ const MoveImageFacesModal = ({
   const { t } = useTranslation()
 
   const [selectedImageFaces, setSelectedImageFaces] = useState<
-    (singleFaceGroup_faceGroup_imageFaces | myFaces_myFaceGroups_imageFaces)[]
+    (singleFaceGroup_faceGroup_imageFaces | myFaces_myFaceGroups_thumbnail)[]
   >([])
   const [selectedFaceGroup, setSelectedFaceGroup] = useState<
     myFaces_myFaceGroups | singleFaceGroup_faceGroup | null

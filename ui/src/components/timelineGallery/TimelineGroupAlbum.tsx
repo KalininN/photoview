@@ -5,6 +5,8 @@ import { PhotoFiller } from '../photoGallery/MediaGallery'
 import {
   toggleFavoriteAction,
   useMarkFavoriteMutation,
+  likePressed,
+  useLikeMediaMutation,
 } from '../photoGallery/photoGalleryMutations'
 import MediaSidebar from '../sidebar/MediaSidebar/MediaSidebar'
 import { SidebarContext } from '../sidebar/Sidebar'
@@ -35,6 +37,7 @@ const TimelineGroupAlbum = ({
   } = mediaState.timelineGroups[dateIndex].albums[albumIndex]
 
   const [markFavorite] = useMarkFavoriteMutation()
+  const [likeMedia] = useLikeMediaMutation()
 
   const { updateSidebar } = useContext(SidebarContext)
 
@@ -67,6 +70,12 @@ const TimelineGroupAlbum = ({
         toggleFavoriteAction({
           media,
           markFavorite,
+        })
+      }}
+      clickLike={() => {
+        likePressed({
+          media,
+          likeMedia,
         })
       }}
       active={media.id === getActiveTimelineImage({ mediaState })?.id}

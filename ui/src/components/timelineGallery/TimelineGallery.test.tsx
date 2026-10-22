@@ -35,7 +35,8 @@ test('timeline with media', async () => {
     </MemoryRouter>
   )
 
-  expect(screen.queryByLabelText('Show only favorites')).toBeInTheDocument()
+  // Fork-specific: the favorites filter is hidden
+  expect(screen.queryByLabelText('Show only favorites')).not.toBeInTheDocument()
 
   expect(await screen.findAllByRole('link')).toHaveLength(4)
   expect(await screen.findAllByRole('img')).toHaveLength(5)

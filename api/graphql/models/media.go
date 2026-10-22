@@ -31,6 +31,7 @@ type Media struct {
 	Faces           []*ImageFace `gorm:"constraint:OnDelete:CASCADE;"`
 	Blurhash        *string      `gorm:""`
 	Rating          int64        `gorm:"default:3;index"`
+	Likes           int64        `gorm:"default:0;index"`
 }
 
 func (Media) TableName() string {

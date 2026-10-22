@@ -4,17 +4,24 @@ import { useTranslation } from 'react-i18next'
 import { UrlParams } from '../../hooks/useURLParameters'
 import Dropdown from '../../primitives/form/Dropdown'
 
-export const DEFAULT_MIN_RATING = 5
+export const DEFAULT_MIN_RATING = 4
+export const TIMELINE_MIN_RATING = 5
+
+/** Limits a rating filter to 3-5, the range the API accepts. */
+export const sanitizeRating = (rating: number) =>
+  Number.isNaN(rating) ? DEFAULT_MIN_RATING : Math.max(Math.min(rating, 5), 3)
 
 /** Reads and writes the `minRating` URL parameter. */
-export const minRatingParams = ({
-  getParam,
-  setParam,
-}: Pick<UrlParams, 'getParam' | 'setParam'>) => {
+export const minRatingParams = (
+  { getParam, setParam }: Pick<UrlParams, 'getParam' | 'setParam'>,
+  defaultMinRating = DEFAULT_MIN_RATING
+) => {
   const param = getParam('minRating')
-  const minRating = param !== null ? parseInt(param, 10) : DEFAULT_MIN_RATING
+  const minRating = sanitizeRating(
+    param !== null ? parseInt(param, 10) : defaultMinRating
+  )
   const setMinRating = (rating: number) =>
-    setParam('minRating', rating.toString())
+    setParam('minRating', sanitizeRating(rating).toString())
 
   return { minRating, setMinRating }
 }
@@ -33,15 +40,15 @@ export const RatingDropdown = ({
   const ratingOptions = [
     {
       value: '5',
-      label: t('album_filter.rating_options.5', '5'),
+      label: t('album_filter.rating_options.5', 'best only'),
     },
     {
       value: '4',
-      label: t('album_filter.rating_options.at_least_4', 'at least 4'),
+      label: t('album_filter.rating_options.at_least_4', 'story'),
     },
     {
       value: '3',
-      label: t('album_filter.rating_options.at_least_3', 'at least 3'),
+      label: t('album_filter.rating_options.at_least_3', 'all'),
     },
   ]
 

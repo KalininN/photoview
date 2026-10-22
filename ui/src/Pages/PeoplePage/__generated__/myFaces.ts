@@ -7,7 +7,7 @@
 // GraphQL query operation: myFaces
 // ====================================================
 
-export interface myFaces_myFaceGroups_imageFaces_rectangle {
+export interface myFaces_myFaceGroups_thumbnail_rectangle {
   __typename: "FaceRectangle";
   minX: number;
   maxX: number;
@@ -15,7 +15,7 @@ export interface myFaces_myFaceGroups_imageFaces_rectangle {
   maxY: number;
 }
 
-export interface myFaces_myFaceGroups_imageFaces_media_thumbnail {
+export interface myFaces_myFaceGroups_thumbnail_media_thumbnail {
   __typename: "MediaURL";
   /**
    * URL for previewing the image
@@ -31,27 +31,27 @@ export interface myFaces_myFaceGroups_imageFaces_media_thumbnail {
   height: number;
 }
 
-export interface myFaces_myFaceGroups_imageFaces_media {
+export interface myFaces_myFaceGroups_thumbnail_media {
   __typename: "Media";
   id: string;
   title: string;
   /**
    * URL to display the media in a smaller resolution
    */
-  thumbnail: myFaces_myFaceGroups_imageFaces_media_thumbnail | null;
+  thumbnail: myFaces_myFaceGroups_thumbnail_media_thumbnail | null;
 }
 
-export interface myFaces_myFaceGroups_imageFaces {
+export interface myFaces_myFaceGroups_thumbnail {
   __typename: "ImageFace";
   id: string;
   /**
    * A bounding box of where on the image the face is present
    */
-  rectangle: myFaces_myFaceGroups_imageFaces_rectangle;
+  rectangle: myFaces_myFaceGroups_thumbnail_rectangle;
   /**
    * A reference to the image the face appears on
    */
-  media: myFaces_myFaceGroups_imageFaces_media;
+  media: myFaces_myFaceGroups_thumbnail_media;
 }
 
 export interface myFaces_myFaceGroups {
@@ -62,10 +62,17 @@ export interface myFaces_myFaceGroups {
    */
   label: string | null;
   /**
+   * The display name
+   */
+  displayLabel: string | null;
+  /**
+   * The id of the cover photo
+   */
+  thumbnail: myFaces_myFaceGroups_thumbnail;
+  /**
    * The total number of images in this collection
    */
   imageFaceCount: number;
-  imageFaces: myFaces_myFaceGroups_imageFaces[];
 }
 
 export interface myFaces {

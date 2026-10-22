@@ -1,4 +1,4 @@
-//go:build !no_face_detection
+//go:build !no_face_detection && !faces_exif
 
 package face_detection
 

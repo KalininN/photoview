@@ -14,15 +14,16 @@ export type SetOrderingFn = (args: {
 
 function useOrderingParams(
   { getParam, setParams }: UrlParams,
-  defaultOrderBy = 'date_shot'
+  defaultOrderBy = 'date_shot',
+  defaultOrderDirection = OrderDirection.ASC
 ) {
   const rawOrderBy = getParam('orderBy', defaultOrderBy)
   const orderBy = rawOrderBy === null || rawOrderBy === '' ? defaultOrderBy : rawOrderBy
 
-  const rawOrderDir = getParam('orderDirection', OrderDirection.ASC)
+  const rawOrderDir = getParam('orderDirection', defaultOrderDirection)
   const orderDirection =
     Object.values(OrderDirection).includes(rawOrderDir as OrderDirection)
-      ? (rawOrderDir as OrderDirection) : OrderDirection.ASC
+      ? (rawOrderDir as OrderDirection) : defaultOrderDirection
 
   const setOrdering: SetOrderingFn = useCallback(
     ({ orderBy, orderDirection }) => {

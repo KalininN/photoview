@@ -59,6 +59,10 @@ export interface singleFaceGroup_faceGroup_imageFaces_media {
    */
   highRes: singleFaceGroup_faceGroup_imageFaces_media_highRes | null;
   favorite: boolean;
+  /**
+   * Number of likes
+   */
+  likes: number | null;
 }
 
 export interface singleFaceGroup_faceGroup_imageFaces {
@@ -78,9 +82,9 @@ export interface singleFaceGroup_faceGroup {
   __typename: "FaceGroup";
   id: string;
   /**
-   * The name of the person
+   * The display name
    */
-  label: string | null;
+  displayLabel: string | null;
   imageFaces: singleFaceGroup_faceGroup_imageFaces[];
 }
 
@@ -93,6 +97,7 @@ export interface singleFaceGroup {
 
 export interface singleFaceGroupVariables {
   id: string;
+  minRating?: number | null;
   limit: number;
   offset: number;
 }

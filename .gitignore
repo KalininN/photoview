@@ -4,6 +4,8 @@ cache/
 /media_cache/
 /api/media_cache/
 /photos_path
+photos_public
+photos_secret
 photoview.db*
 
 .env

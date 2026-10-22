@@ -9,6 +9,13 @@ import * as authentication from '../../../helpers/authentication'
 
 vi.mock('../../../helpers/authentication.ts')
 
+// Fork-specific: only admins can set album covers
+vi.mock('../../routes/AuthorizedRoute', () => ({
+  useIsAdmin: () => authentication.authToken() !== null,
+  Authorized: ({ children }: { children: JSX.Element }) => children,
+  default: ({ children }: { children: JSX.Element }) => children,
+}))
+
 const authToken = vi.mocked(authentication.authToken)
 
 describe('MediaSidebar', () => {
@@ -51,7 +58,8 @@ describe('MediaSidebar', () => {
     expect(screen.getByText('122A6069.jpg')).toBeInTheDocument()
     expect(screen.getByRole('img')).toHaveAttribute(
       'src',
-      'http://localhost:3000/photo/highres.jpg'
+      // Fork-specific: the sidebar shows the thumbnail
+      'http://localhost:3000/photo/thumbnail.jpg'
     )
 
     expect(
@@ -74,7 +82,8 @@ describe('MediaSidebar', () => {
     expect(screen.getByText('122A6069.jpg')).toBeInTheDocument()
     expect(screen.getByRole('img')).toHaveAttribute(
       'src',
-      'http://localhost:3000/photo/highres.jpg'
+      // Fork-specific: the sidebar shows the thumbnail
+      'http://localhost:3000/photo/thumbnail.jpg'
     )
 
     expect(screen.getByText('Set as album cover photo')).toBeInTheDocument()
