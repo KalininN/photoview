@@ -194,7 +194,7 @@ const MediaSidebarPerson = ({ face, menuFlipped }: MediaSidebarFaceProps) => {
 
   const isAdmin = useIsAdmin()
   return (
-    <li className="inline-block">
+    <li className="flex flex-col items-center">
       <Link to={`/people/${face.faceGroup.id}`}>
         <FaceCircleImage imageFace={face} selectable={true} size="92px" />
       </Link>
@@ -227,7 +227,7 @@ const MediaSidebarPeople = ({ media }: MediaSidebarFacesProps) => {
   const { t } = useTranslation()
 
   const faceElms = (media.faces ?? []).map((face, i) => (
-    <MediaSidebarPerson key={face.id} face={face} menuFlipped={i == 0} />
+    <MediaSidebarPerson key={face.id} face={face} menuFlipped={i % 3 == 0} />
   ))
 
   if (faceElms.length == 0) return null
@@ -237,13 +237,7 @@ const MediaSidebarPeople = ({ media }: MediaSidebarFacesProps) => {
       <SidebarSectionTitle>
         {t('sidebar.people.title', 'People')}
       </SidebarSectionTitle>
-      <div
-        className="overflow-x-auto mb-[-200px]"
-        style={{ scrollbarWidth: 'none' }}
-      >
-        <ul className="flex gap-4 mx-4">{faceElms}</ul>
-        <div className="h-[200px]"></div>
-      </div>
+      <ul className="grid grid-cols-3 gap-4 px-4">{faceElms}</ul>
     </SidebarSection>
   )
 }

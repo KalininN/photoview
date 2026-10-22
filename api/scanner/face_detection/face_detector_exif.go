@@ -7,9 +7,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/barasher/go-exiftool"
-	"github.com/photoview/photoview/api/dataloader"
 	"github.com/photoview/photoview/api/graphql/models"
+	"github.com/photoview/photoview/api/scanner/externaltools/exif"
 	"github.com/photoview/photoview/api/utils"
 	"gorm.io/gorm"
 )
@@ -18,10 +17,8 @@ import (
 // The scanner then reads them when a file is found or changed, see scanner_tasks.RatingTask.
 const FromMetadata = true
 
-type faceDetector struct {
-	et         *exiftool.Exiftool
-	dataLoader *dataloader.ExiftoolLoader
-}
+// faceDetector reads metadata with the scanner's exiftool, see exif.Initialize.
+type faceDetector struct{}
 
 func InitializeFaceDetector(db *gorm.DB) error {
 	if utils.EnvDisableFaceRecognition.GetBool() {
@@ -31,19 +28,7 @@ func InitializeFaceDetector(db *gorm.DB) error {
 
 	log.Println("Initializing face extractions from EXIF")
 
-	buf := make([]byte, 256*1024)
-
-	et, err := exiftool.NewExiftool(exiftool.NoPrintConversion(), exiftool.Buffer(buf, 64*1024))
-
-	if err != nil {
-		log.Printf("Error initializing ExifTool: %s\n", err)
-		return err
-	}
-
-	GlobalFaceDetector = &faceDetector{
-		et:         et,
-		dataLoader: dataloader.NewExiftoolLoader(et),
-	}
+	GlobalFaceDetector = &faceDetector{}
 
 	return nil
 }
@@ -59,25 +44,23 @@ func (fd *faceDetector) DetectFaces(db *gorm.DB, media *models.Media) error {
 		return err
 	}
 
-	// Only new or changed files get here, so never use a cached result
-	fd.dataLoader.Clear(media.Path)
-	fileInfo, err := fd.dataLoader.Load(media.Path)
+	fields, err := exif.FaceRegionFields(media.Path)
 	if err != nil {
 		return err
 	}
 
 	orientation := 1
 	if media.ExifID != nil {
-		var exif models.MediaEXIF
-		if err := db.Select("orientation").First(&exif, *media.ExifID).Error; err != nil {
+		var mediaEXIF models.MediaEXIF
+		if err := db.Select("orientation").First(&mediaEXIF, *media.ExifID).Error; err != nil {
 			return err
 		}
-		if exif.Orientation != nil {
-			orientation = int(*exif.Orientation)
+		if mediaEXIF.Orientation != nil {
+			orientation = int(*mediaEXIF.Orientation)
 		}
 	}
 
-	for _, face := range ParseFaceRegions(fileInfo.Fields, orientation) {
+	for _, face := range ParseFaceRegions(fields, orientation) {
 		imageFace := models.ImageFace{
 			MediaID: media.ID,
 			Rectangle: models.FaceRectangle{

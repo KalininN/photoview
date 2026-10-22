@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/joho/godotenv"
+	"github.com/photoview/photoview/api/scanner/externaltools/exif"
 	"github.com/photoview/photoview/api/scanner/media_encoding/executable_worker"
 	"github.com/photoview/photoview/api/test_utils/flags"
 	"github.com/photoview/photoview/api/utils"
@@ -16,11 +17,22 @@ import (
 var test_dbm TestDBManager = TestDBManager{}
 
 func UnitTestRun(m *testing.M) {
+	exitCode := 1
+	defer func() {
+		os.Exit(exitCode)
+	}()
+
 	flag.Parse()
-	os.Exit(m.Run())
+
+	exitCode = m.Run()
 }
 
 func IntegrationTestRun(m *testing.M) {
+	exitCode := 1
+	defer func() {
+		os.Exit(exitCode)
+	}()
+
 	flag.Parse()
 
 	if flags.Database {
@@ -35,10 +47,16 @@ func IntegrationTestRun(m *testing.M) {
 	faceModelsPath := PathFromAPIRoot("data", "models")
 	utils.ConfigureTestFaceRecognitionModelsPath(faceModelsPath)
 
+	exifCleanup, err := exif.Initialize()
+	if err != nil {
+		log.Panicf("init exif error: %v", err)
+	}
+	defer exifCleanup()
+
 	terminateWorkers := executable_worker.Initialize()
 	defer terminateWorkers()
 
-	os.Exit(m.Run())
+	exitCode = m.Run()
 }
 
 func FilesystemTest(t *testing.T) {

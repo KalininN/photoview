@@ -22,11 +22,11 @@ When a file changes on disk, its EXIF data and rating are read again on the next
 
 Fork-only files:
 
-- `api/scanner/exif/rating.go`
+- `api/scanner/externaltools/exiftool/rating.go`
 - `api/scanner/scanner_tasks/rating_task.go`, `rating_task_test.go`
 - `api/graphql/models/rating.go`
 - `api/graphql/models/actions/timeline_rating_test.go`
-- `api/scanner/exif/rating_test.go`, `test_data/rated*.jpg`
+- `api/scanner/externaltools/exif/rating_test.go`, `test_data/rated*.jpg`
 - `ui/src/components/album/RatingDropdown.tsx`
 
 Hooks in upstream files:
@@ -35,7 +35,7 @@ Hooks in upstream files:
 - `api/graphql/resolvers/album.graphql`, `media.graphql`, `timeline.graphql`, `faces.graphql`: `minRating` arguments, `rating` fields
 - `api/graphql/resolvers/album.go`, `timeline.go`, `faces.go`, `media_geo_json.go`, `models/actions/timeline_actions.go`:
   `FilterMinRating` calls
-- `api/scanner/exif/exif_parser_external.go`: reads the `Rating` tag
+- `api/scanner/externaltools/exif/exif.go`: reads the `exiftool.Rating` group
 - `api/scanner/scanner_tasks/scanner_tasks.go`: registers `RatingTask` after `ExifTask`
 - UI: `AlbumFilter.tsx`, `AlbumGallery.tsx`, `AlbumPage.tsx`, `AlbumSharePage.tsx`, `SharePage.tsx`,
   `TimelineFilters.tsx`, `TimelineGallery.tsx`, `MediaSidebar.tsx`, `MediaSidebarExif.tsx` and two test fixtures
@@ -51,6 +51,9 @@ Without the tag, upstream's face detector works as before.
 Fork-only files:
 
 - `api/scanner/face_detection/face_detector_exif.go`, `face_detector_not_exif.go`, `face_regions.go` (and test)
+- `api/scanner/externaltools/exif/face_regions.go` (and test, `test_data/faces.jpg`): reads the region tags
+  with the scanner's exiftool
+- `api/scanner/scanner_tasks/rating_task_faces_test.go`: only runs with `go test -tags faces_exif`
 - `api/database/migrations/face_group_display_label.go` (and test)
 - `ui/src/primitives/LabelEditable.tsx`
 
@@ -77,31 +80,30 @@ the present view. The browser remembers what it liked, so each browser likes a p
 ### Album titles and covers
 
 Admins can rename an album (`setAlbumTitle`, `resetAlbumTitle`). An album without a cover uses its
-sub-albums' cover. The albums page sorts by title in reverse order.
+sub-albums' cover. The albums page sorts by title in reverse order by default.
 
 - Fork-only: `api/graphql/models/actions/album_title_actions.go` (and test)
 - Hooks: `album.graphql`, `resolvers/album.go`, `models/album.go` (`Thumbnail`), `AlbumTitle.tsx`,
-  `AlbumsPage.tsx`, `album_actions_test.go`
+  `AlbumsPage.tsx`, `useOrderingParams.ts` (default direction), `album_actions_test.go`
 
 ### Admin-only management
 
-Setting album covers and titles, editing face groups, and deleting or protecting share tokens need an
-admin (`@isAdmin` in `album.graphql`, `faces.graphql`, `share_token.graphql`). The UI hides those
-controls from other users.
+Setting album covers and titles, editing face groups, and deleting, protecting, labelling or setting
+the expiry of share tokens need an admin (`@isAdmin` in `album.graphql`, `faces.graphql`,
+`share_token.graphql`). The UI hides the album and face controls from other users; the share token
+controls in the sharing sidebar are still shown to them, and fail.
 
 ### Smaller UI changes
 
 - The favorites filter is hidden (`AlbumFilter.tsx`, `TimelineFilters.tsx`).
 - The sidebar shows the thumbnail, and closes on page changes unless pinned (`MediaSidebar.tsx`, `Sidebar.tsx`).
 
-### GPS longitude up to ±180
+### GPS longitude up to ±180 in the GPS migration
 
-- `api/scanner/exif/exif_parser_*.go` accept longitudes up to ±180. Upstream merged the same fix
-  as [#1260](https://github.com/photoview/photoview/pull/1260), so it stops being a fork change
-  after the next upstream merge.
-- `api/database/migrations/exif_invalid_gps.go` (and its test) only clears longitudes beyond ±180.
-  Upstream still clears everything beyond ±90 on every startup, which deletes valid coordinates;
-  this is worth sending upstream.
+`api/database/migrations/exif_invalid_gps.go` (and its test) only clears longitudes beyond ±180.
+Upstream still clears everything beyond ±90 on every startup, which deletes valid coordinates;
+this is worth sending upstream. (The scanner side of this fix is upstream as
+[#1260](https://github.com/photoview/photoview/pull/1260).)
 
 ### Build script
 

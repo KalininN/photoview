@@ -20,7 +20,7 @@ import (
 	"github.com/photoview/photoview/api/graphql/auth"
 	graphql_endpoint "github.com/photoview/photoview/api/graphql/endpoint"
 	"github.com/photoview/photoview/api/routes"
-	"github.com/photoview/photoview/api/scanner/exif"
+	"github.com/photoview/photoview/api/scanner/externaltools/exif"
 	"github.com/photoview/photoview/api/scanner/face_detection"
 	"github.com/photoview/photoview/api/scanner/media_encoding/executable_worker"
 	"github.com/photoview/photoview/api/scanner/periodic_scanner"
@@ -53,6 +53,12 @@ func main() {
 		log.Panicf("Could not migrate database: %s\n", err)
 	}
 
+	exifCleanup, err := exif.Initialize()
+	if err != nil {
+		log.Panicf("Could not initialize exif parser: %s", err)
+	}
+	defer exifCleanup()
+
 	if err := scanner_queue.InitializeScannerQueue(db); err != nil {
 		log.Panicf("Could not initialize scanner queue: %s\n", err)
 	}
@@ -60,8 +66,6 @@ func main() {
 	if err := periodic_scanner.InitializePeriodicScanner(db); err != nil {
 		log.Panicf("Could not initialize periodic scanner: %s", err)
 	}
-
-	exif.InitializeEXIFParser()
 
 	if err := face_detection.InitializeFaceDetector(db); err != nil {
 		log.Panicf("Could not initialize face detector: %s\n", err)
@@ -78,14 +82,14 @@ func main() {
 	endpointRouter := rootRouter.PathPrefix(apiListenURL.Path).Subrouter()
 
 	if devMode {
-		endpointRouter.Handle("/", playground.Handler("GraphQL playground", path.Join(apiListenURL.Path, "/graphql")))
+		endpointRouter.Handle("/", playground.Handler("GraphQL playground", path.Join(apiListenURL.Path, "graphql")))
 	} else {
 		endpointRouter.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 			w.Write([]byte("photoview api endpoint"))
 		})
 	}
 
-	endpointRouter.Handle("/graphql", graphql_endpoint.GraphqlEndpoint(db))
+	endpointRouter.Handle("/graphql", handlers.CompressHandler(graphql_endpoint.GraphqlEndpoint(db)))
 
 	photoRouter := endpointRouter.PathPrefix("/photo").Subrouter()
 	routes.RegisterPhotoRoutes(db, photoRouter)
@@ -99,7 +103,10 @@ func main() {
 	shouldServeUI := utils.ShouldServeUI()
 
 	if shouldServeUI {
-		spa := routes.NewSpaHandler(utils.UIPath(), "index.html")
+		spa, err := routes.NewSpaHandler(utils.UIPath(), "index.html")
+		if err != nil {
+			log.Panicf("Could not configure UI handler: %s", err)
+		}
 		rootRouter.PathPrefix("/").Handler(spa)
 	}
 
@@ -114,14 +121,13 @@ func main() {
 		logUIendpointURL()
 
 		if !shouldServeUI {
-			log.Printf("Notice: UI is not served by the the api (%s=0)", utils.EnvServeUI.GetName())
+			log.Printf("Notice: UI is not served by the API (%s=0)", utils.EnvServeUI.GetName())
 		}
-
 	}
 
 	srv := &http.Server{
 		Addr:    apiListenURL.Host,
-		Handler: handlers.CompressHandler(rootRouter),
+		Handler: rootRouter,
 	}
 
 	setupGracefulShutdown(srv)
@@ -131,7 +137,7 @@ func main() {
 	}
 }
 
-func setupGracefulShutdown(server *http.Server) {
+func setupGracefulShutdown(svr *http.Server) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
@@ -145,7 +151,7 @@ func setupGracefulShutdown(server *http.Server) {
 		periodic_scanner.ShutdownPeriodicScanner()
 		scanner_queue.CloseScannerQueue()
 
-		if err := server.Shutdown(ctx); err != nil {
+		if err := svr.Shutdown(ctx); err != nil {
 			log.Printf("Server shutdown error: %s", err)
 		} else {
 			log.Println("Shutdown complete")
@@ -154,8 +160,8 @@ func setupGracefulShutdown(server *http.Server) {
 }
 
 func logUIendpointURL() {
-	if uiEndpoint := utils.UiEndpointUrl(); uiEndpoint != nil {
-		log.Printf("Photoview UI public endpoint ready at %s\n", uiEndpoint.String())
+	if uiEndpoints := utils.UiEndpointUrls(); len(uiEndpoints) > 0 {
+		log.Printf("Photoview UI public endpoint(s) ready at: %q\n", uiEndpoints)
 	} else {
 		log.Println("Photoview UI public endpoint ready at /")
 	}

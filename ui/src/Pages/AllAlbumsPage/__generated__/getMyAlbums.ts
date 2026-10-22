@@ -3,6 +3,8 @@
 // @generated
 // This file was automatically generated and should not be edited.
 
+import { OrderDirection } from "./../../../__generated__/globalTypes";
+
 // ====================================================
 // GraphQL query operation: getMyAlbums
 // ====================================================
@@ -39,4 +41,9 @@ export interface getMyAlbums {
    * List of albums owned by the logged in user.
    */
   myAlbums: getMyAlbums_myAlbums[];
+}
+
+export interface getMyAlbumsVariables {
+  orderBy?: string | null;
+  orderDirection?: OrderDirection | null;
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/photoview/photoview/api/graphql/models"
-	"github.com/photoview/photoview/api/scanner/exif"
 	"github.com/photoview/photoview/api/scanner/scanner_task"
 	"github.com/photoview/photoview/api/test_utils"
 )
@@ -20,7 +19,6 @@ import (
 // Fork-specific: not part of upstream Photoview.
 
 func TestMain(m *testing.M) {
-	exif.InitializeEXIFParser()
 	test_utils.IntegrationTestRun(m)
 }
 
@@ -30,7 +28,7 @@ func TestRatingTask(t *testing.T) {
 
 	dir := t.TempDir()
 	mediaPath := filepath.Join(dir, "photo.jpg")
-	require.NoError(t, copy.Copy(test_utils.PathFromAPIRoot("scanner", "exif", "test_data", "rated.jpg"), mediaPath))
+	require.NoError(t, copy.Copy(test_utils.PathFromAPIRoot("scanner", "externaltools", "exif", "test_data", "rated.jpg"), mediaPath))
 
 	album := models.Album{Title: "album", Path: dir}
 	require.NoError(t, db.Create(&album).Error)
@@ -65,7 +63,7 @@ func TestRatingTask(t *testing.T) {
 	t.Run("media changed on disk is re-read", func(t *testing.T) {
 		oldExifID := *media.ExifID
 
-		require.NoError(t, copy.Copy(test_utils.PathFromAPIRoot("scanner", "exif", "test_data", "rated5.jpg"), mediaPath))
+		require.NoError(t, copy.Copy(test_utils.PathFromAPIRoot("scanner", "externaltools", "exif", "test_data", "rated5.jpg"), mediaPath))
 		future := time.Now().Add(time.Minute)
 		require.NoError(t, os.Chtimes(mediaPath, future, future))
 
