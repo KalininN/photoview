@@ -51,7 +51,7 @@ const FaceGroupRow = ({
       <FlexCell className={faceSelected ? 'brightness-110' : ''}>
         <FaceCircleWrapper $selected={faceSelected}>
           <FaceCircleImage
-            imageFace={faceGroup.imageFaces[0]}
+            imageFace={faceGroup.thumbnail}
             size="50px"
             selectable={false}
           />
@@ -59,9 +59,9 @@ const FaceGroupRow = ({
         <span
           className={`ml-3 ${
             faceSelected ? 'font-semibold text-slate-100' : 'text-gray-400'
-          } ${!faceSelected && !faceGroup.label ? 'text-gray-600 italic' : ''}`}
+          } ${!faceSelected && !faceGroup.displayLabel ? 'text-gray-600 italic' : ''}`}
         >
-          {faceGroup.label ??
+          {faceGroup.displayLabel ??
             t('people_page.face_group.unlabeled', 'Unlabeled')}
         </span>
       </FlexCell>
@@ -96,7 +96,8 @@ const SelectFaceGroupTable = ({
     .filter(
       x =>
         searchValue == '' ||
-        (x.label && x.label.toLowerCase().includes(searchValue.toLowerCase()))
+        (x.displayLabel &&
+          x.displayLabel.toLowerCase().includes(searchValue.toLowerCase()))
     )
     .map(face => (
       <FaceGroupRow

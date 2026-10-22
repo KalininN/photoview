@@ -12,7 +12,7 @@ import {
   TableHeaderCell,
   TableRow,
 } from '../../../primitives/Table'
-import { myFaces_myFaceGroups_imageFaces } from '../__generated__/myFaces'
+import { myFaces_myFaceGroups_thumbnail } from '../__generated__/myFaces'
 import { singleFaceGroup_faceGroup_imageFaces } from './__generated__/singleFaceGroup'
 
 const SelectImagePreview = styled(ProtectedImage)`
@@ -22,7 +22,7 @@ const SelectImagePreview = styled(ProtectedImage)`
 
 type ImageFaceRowProps = {
   imageFace:
-    | myFaces_myFaceGroups_imageFaces
+    | myFaces_myFaceGroups_thumbnail
     | singleFaceGroup_faceGroup_imageFaces
   faceSelected: boolean
   setFaceSelected(): void
@@ -54,16 +54,16 @@ const ImageFaceRow = ({
 
 type SelectImageFacesTable = {
   imageFaces: (
-    | myFaces_myFaceGroups_imageFaces
+    | myFaces_myFaceGroups_thumbnail
     | singleFaceGroup_faceGroup_imageFaces
   )[]
   selectedImageFaces: (
-    | myFaces_myFaceGroups_imageFaces
+    | myFaces_myFaceGroups_thumbnail
     | singleFaceGroup_faceGroup_imageFaces
   )[]
   setSelectedImageFaces: React.Dispatch<
     React.SetStateAction<
-      (myFaces_myFaceGroups_imageFaces | singleFaceGroup_faceGroup_imageFaces)[]
+      (myFaces_myFaceGroups_thumbnail | singleFaceGroup_faceGroup_imageFaces)[]
     >
   >
   title: string
