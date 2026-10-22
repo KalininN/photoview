@@ -180,19 +180,23 @@ func (r *mutationResolver) SetFaceGroupCover(ctx context.Context, faceGroupID in
 
 	var image_face models.ImageFace
 
-	if err := db.Find(&image_face, faceID).Error; err != nil {
+	if err := db.First(&image_face, faceID).Error; err != nil {
 		return nil, err
+	}
+
+	if image_face.FaceGroupID != faceGroup.ID {
+		return nil, errors.New("the face does not belong to this face group")
 	}
 
 	var media models.Media
 
-	if err := db.Find(&media, image_face.MediaID).Error; err != nil {
+	if err := db.First(&media, image_face.MediaID).Error; err != nil {
 		return nil, err
 	}
 
 	var album models.Album
 
-	if err := db.Find(&album, &media.AlbumID).Error; err != nil {
+	if err := db.First(&album, media.AlbumID).Error; err != nil {
 		return nil, err
 	}
 
