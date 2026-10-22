@@ -9,6 +9,7 @@ import { ReactComponent as SortingIcon } from './icons/sorting.svg'
 import { ReactComponent as DirectionIcon } from './icons/direction-arrow.svg'
 
 import Dropdown from '../../primitives/form/Dropdown'
+import { RatingDropdown } from './RatingDropdown'
 import classNames from 'classnames'
 
 export type FavoriteCheckboxProps = {
@@ -110,52 +111,6 @@ const SortingOptions = ({ setOrdering, ordering }: SortingOptionsProps) => {
           </span>
         </button>
       </div>
-    </fieldset>
-  )
-}
-
-// RatingOptions dropdown for filtering by rating
-export type RatingDropdownProps = {
-  minRating?: number
-  setMinRating?: (rating: number) => void
-}
-
-export const RatingDropdown = ({ minRating: ratingFilter, setMinRating: setRatingFilter }: RatingDropdownProps) => {
-  const { t } = useTranslation()
-
-  const ratingOptions = [
-    {
-      value: '5',
-      label: t('album_filter.rating_options.5', '5'),
-    },
-    {
-      value: '4',
-      label: t('album_filter.rating_options.at_least_4', 'at least 4'),
-    },
-    {
-      value: '3',
-      label: t('album_filter.rating_options.at_least_3', 'at least 3'),
-    },
-  ]
-
-  const handleChange = (value: string) => {
-    if (setRatingFilter) {
-      setRatingFilter(parseInt(value, 10))
-    }
-  }
-
-  return (
-    <fieldset>
-      <legend id="filter_group_rating-label" className="inline-block mb-1">
-        <span>{t('album_filter.rating', 'Rating')}</span>
-      </legend>
-      <Dropdown
-        aria-labelledby="filter_group_rating-label"
-        setSelected={handleChange}
-        value={ratingFilter?.toString() || undefined}
-        items={ratingOptions}
-        placeholder={t('album_filter.rating_options.placeholder', 'Select rating')}
-      />
     </fieldset>
   )
 }

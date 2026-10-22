@@ -99,7 +99,6 @@ func (p *externalExifParser) ParseExif(mediaPath string) (returnExif *models.Med
 			return nil, err
 		}
 	}
-	log.Printf("Calling external ExifTool on %s\n", mediaPath)
 
 	fileInfo, err := p.dataLoader.Load(mediaPath)
 	if err != nil {

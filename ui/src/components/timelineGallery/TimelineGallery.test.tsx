@@ -12,7 +12,12 @@ test('timeline with media', async () => {
     {
       request: {
         query: MY_TIMELINE_QUERY,
-        variables: { onlyFavorites: false, offset: 0, limit: 200 },
+        variables: {
+          onlyFavorites: false,
+          minRating: 5,
+          offset: 0,
+          limit: 200,
+        },
       },
       result: {
         data: {

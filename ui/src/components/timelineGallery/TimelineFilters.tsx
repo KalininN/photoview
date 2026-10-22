@@ -4,7 +4,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import Dropdown, { DropdownItem } from '../../primitives/form/Dropdown'
 import { FavoriteCheckboxProps, FavoritesCheckbox } from '../album/AlbumFilter'
-import { RatingDropdownProps, RatingDropdown } from '../album/AlbumFilter'
+import { RatingDropdownProps, RatingDropdown } from '../album/RatingDropdown'
 
 import { ReactComponent as DateIcon } from './icons/date.svg'
 import { earliestMedia } from './__generated__/earliestMedia'
@@ -86,7 +86,9 @@ const DateSelector = ({ filterDate, setFilterDate }: DateSelectorProps) => {
   )
 }
 
-type TimelineFiltersProps = DateSelectorProps & FavoriteCheckboxProps & RatingDropdownProps
+type TimelineFiltersProps = DateSelectorProps &
+  FavoriteCheckboxProps &
+  RatingDropdownProps
 
 const TimelineFilters = ({
   onlyFavorites,

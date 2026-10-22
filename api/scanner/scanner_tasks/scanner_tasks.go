@@ -22,6 +22,7 @@ var allTasks []scanner_task.ScannerTask = []scanner_task.ScannerTask{
 	FaceDetectionTask{},
 	BlurhashTask{},
 	ExifTask{},
+	RatingTask{}, // fork-specific, must run after ExifTask
 	VideoMetadataTask{},
 	cleanup_tasks.MediaCleanupTask{},
 }
