@@ -196,63 +196,14 @@ func MigrateDatabase(db *gorm.DB) error {
 		log.Printf("Failed to run exif GPS correction migration: %v\n", err)
 	}
 
+	// Fork-specific: face groups need a display label
+	if err := migrations.MigrateFaceGroupDisplayLabels(db); err != nil {
+		log.Printf("Failed to run face group display label migration: %v\n", err)
+	}
+
 	// v2.5.0 - Remove Thumbnail Method for Downsampliing filters
 	if db.Migrator().HasColumn(&models.SiteInfo{}, "thumbnail_method") {
 		db.Migrator().DropColumn(&models.SiteInfo{}, "thumbnail_method")
-	}
-
-	// Add rating column to media and media_exif tables
-	if !db.Migrator().HasColumn(&models.Media{}, "rating") {
-		if err := db.Migrator().AddColumn(&models.Media{}, "rating"); err != nil {
-			log.Printf("Failed to add rating column to media table: %v\n", err)
-		} else {
-			// Set default rating to 3 for all existing media
-			if err := db.Model(&models.Media{}).Where("rating IS NULL").Update("rating", 3).Error; err != nil {
-				log.Printf("Failed to set default rating for existing media: %v\n", err)
-			}
-		}
-	}
-
-	if !db.Migrator().HasColumn(&models.MediaEXIF{}, "rating") {
-		if err := db.Migrator().AddColumn(&models.MediaEXIF{}, "rating"); err != nil {
-			log.Printf("Failed to add rating column to media_exif table: %v\n", err)
-		} else {
-			// Set default rating to 3 for all existing media exif
-			if err := db.Model(&models.MediaEXIF{}).Where("rating IS NULL").Update("rating", 3).Error; err != nil {
-				log.Printf("Failed to set default rating for existing media exif: %v\n", err)
-			}
-		}
-	}
-
-	// Add display_label column to face_groups table
-	if !db.Migrator().HasColumn(&models.FaceGroup{}, "display_label") {
-		if err := db.Migrator().AddColumn(&models.FaceGroup{}, "display_label"); err != nil {
-			log.Printf("Failed to add display_label column to face_groups table: %v\n", err)
-		} else {
-			// Set default display_label to label where display_label is null
-			if err := db.Model(&models.FaceGroup{}).Where("display_label IS NULL").UpdateColumn("display_label", gorm.Expr("label")).Error; err != nil {
-				log.Printf("Failed to set default display_label for existing face groups: %v\n", err)
-			}
-		}
-	}
-
-	// Add cover_id column to face_groups table
-	if !db.Migrator().HasColumn(&models.FaceGroup{}, "cover_id") {
-		if err := db.Migrator().AddColumn(&models.FaceGroup{}, "cover_id"); err != nil {
-			log.Printf("Failed to add cover_id column to face_groups table: %v\n", err)
-		}
-	}
-
-	// Add likes column to media table
-	if !db.Migrator().HasColumn(&models.Media{}, "likes") {
-		if err := db.Migrator().AddColumn(&models.Media{}, "likes"); err != nil {
-			log.Printf("Failed to add likes column to media table: %v\n", err)
-		} else {
-			// Set default likes to 0 for all existing media
-			if err := db.Model(&models.Media{}).Where("likes IS NULL").Update("likes", 0).Error; err != nil {
-				log.Printf("Failed to set default likes for existing media: %v\n", err)
-			}
-		}
 	}
 
 	return nil
