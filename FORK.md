@@ -39,9 +39,16 @@ Hooks in upstream files:
 
 ### GPS longitude up to ±180
 
-`api/scanner/exif/exif_parser_*.go` accept longitudes up to ±180. Upstream merged the same fix
-as [#1260](https://github.com/photoview/photoview/pull/1260), so it stops being a fork change
-after the next upstream merge.
+- `api/scanner/exif/exif_parser_*.go` accept longitudes up to ±180. Upstream merged the same fix
+  as [#1260](https://github.com/photoview/photoview/pull/1260), so it stops being a fork change
+  after the next upstream merge.
+- `api/database/migrations/exif_invalid_gps.go` (and its test) only clears longitudes beyond ±180.
+  Upstream still clears everything beyond ±90 on every startup, which deletes valid coordinates;
+  this is worth sending upstream.
+
+### Build script
+
+`build_and_push.sh` builds the Docker image and pushes it as `kalininn/photoview:latest`.
 
 ## Syncing with upstream
 
