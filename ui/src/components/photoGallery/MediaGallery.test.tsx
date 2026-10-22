@@ -7,6 +7,9 @@ import { MediaGalleryState } from './mediaGalleryReducer'
 
 vi.mock('./photoGalleryMutations', () => ({
   useMarkFavoriteMutation: () => [vi.fn()],
+  useLikeMediaMutation: () => [vi.fn()],
+  isMediaLiked: () => false,
+  likePressed: vi.fn(),
 }))
 
 test('photo gallery with media', () => {
@@ -28,6 +31,7 @@ test('photo gallery with media', () => {
         videoWeb: null,
         blurhash: null,
         favorite: false,
+        likes: 0,
         __typename: 'Media',
       },
       {
@@ -38,6 +42,7 @@ test('photo gallery with media', () => {
         videoWeb: null,
         blurhash: null,
         favorite: false,
+        likes: 0,
         __typename: 'Media',
       },
       {
@@ -48,6 +53,7 @@ test('photo gallery with media', () => {
         videoWeb: null,
         blurhash: null,
         favorite: false,
+        likes: 0,
         __typename: 'Media',
       },
     ],
@@ -105,6 +111,7 @@ describe('photo gallery presenting', () => {
           videoWeb: null,
           blurhash: null,
           favorite: false,
+          likes: 0,
           __typename: 'Media',
         },
       ],

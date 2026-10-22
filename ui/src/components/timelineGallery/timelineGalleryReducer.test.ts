@@ -15,6 +15,7 @@ describe('timeline gallery reducer', () => {
       media: -1,
     },
     timelineGroups: [],
+    timelineMediaIds: [],
   }
 
   const defaultState = timelineGalleryReducer(defaultEmptyState, {
