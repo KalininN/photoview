@@ -4,7 +4,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/photoview/photoview/api/test_utils"
 )
+
+func TestMain(m *testing.M) {
+	test_utils.UnitTestRun(m)
+}
 
 func TestParseFaceRegions(t *testing.T) {
 	t.Run("single region as scalars", func(t *testing.T) {
