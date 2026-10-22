@@ -5,6 +5,7 @@ import React, {
   createRef,
   KeyboardEventHandler,
 } from 'react'
+import { useIsAdmin } from '../../../components/routes/AuthorizedRoute'
 import { useTranslation } from 'react-i18next'
 import { isNil } from '../../../helpers/utils'
 import { Button, TextField } from '../../../primitives/form/Input'
@@ -19,16 +20,18 @@ import MergeFaceGroupsModal, {
 } from './MergeFaceGroupsModal'
 import MoveImageFacesModal from './MoveImageFacesModal'
 import { singleFaceGroup_faceGroup } from './__generated__/singleFaceGroup'
+import { RatingDropdownProps, RatingDropdown } from '../../../components/album/RatingDropdown'
+
 
 type FaceGroupTitleProps = {
   faceGroup?: singleFaceGroup_faceGroup
-}
+} & RatingDropdownProps
 
-const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
+const FaceGroupTitle = ({ faceGroup, minRating, setMinRating }: FaceGroupTitleProps) => {
   const { t } = useTranslation()
 
   const [editLabel, setEditLabel] = useState(false)
-  const [inputValue, setInputValue] = useState(faceGroup?.label ?? '')
+  const [inputValue, setInputValue] = useState(faceGroup?.displayLabel ?? '')
   const inputRef = createRef<HTMLInputElement>()
   const [mergeModalState, setMergeModalState] = useState(
     MergeFaceGroupsModalState.Closed
@@ -42,7 +45,7 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
   >(SET_GROUP_LABEL_MUTATION)
 
   const resetLabel = () => {
-    setInputValue(faceGroup?.label ?? '')
+    setInputValue(faceGroup?.displayLabel ?? '')
     setEditLabel(false)
   }
 
@@ -71,11 +74,11 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
       <>
         <h1
           className={`text-2xl font-semibold ${
-            faceGroup?.label ? '' : 'text-gray-600 dark:text-gray-400'
+            faceGroup?.displayLabel ? '' : 'text-gray-600 dark:text-gray-400'
           }`}
         >
-          {faceGroup?.label ??
-            t('people_page.face_group.unlabeled_person', 'Unlabeled person')}
+          {faceGroup?.displayLabel ?? t('people_page.face_group.unlabeled_person', 'Unlabeled person')
+            }
         </h1>
       </>
     )
@@ -93,7 +96,7 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
             setGroupLabel({
               variables: {
                 groupID: faceGroup.id,
-                label: inputValue ? inputValue : null,
+                displayLabel: inputValue ? inputValue : null,
               },
             })
           }}
@@ -108,8 +111,9 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
     )
   }
 
+  const isAdmin = useIsAdmin()
   let modals = null
-  if (faceGroup) {
+  if (isAdmin && faceGroup) {
     modals = (
       <>
         <MergeFaceGroupsModal
@@ -140,6 +144,7 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
     <>
       <div>
         <div className="mb-2">{title}</div>
+        {isAdmin && (
         <ul className="flex gap-2 flex-wrap mb-6">
           <li>
             <Button onClick={() => setEditLabel(true)}>
@@ -165,7 +170,10 @@ const FaceGroupTitle = ({ faceGroup }: FaceGroupTitleProps) => {
               {t('people_page.action_label.move_faces', 'Move faces')}
             </Button>
           </li>
-        </ul>
+        </ul>)}
+        <div className="flex items-end gap-4 flex-wrap mb-4">
+          <RatingDropdown minRating={minRating} setMinRating={setMinRating} />
+        </div>
       </div>
       {modals}
     </>

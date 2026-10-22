@@ -15,8 +15,10 @@ import (
 
 type FaceGroup struct {
 	Model
-	Label      *string
-	ImageFaces []ImageFace `gorm:"constraint:OnDelete:CASCADE;"`
+	Label        *string
+	DisplayLabel *string
+	ImageFaces   []ImageFace `gorm:"constraint:OnDelete:CASCADE;"`
+	CoverID      *int
 }
 
 type ImageFace struct {

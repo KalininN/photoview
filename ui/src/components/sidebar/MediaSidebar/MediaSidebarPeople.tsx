@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { useMutation, gql } from '@apollo/client'
+import { useIsAdmin } from '../../../components/routes/AuthorizedRoute'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import FaceCircleImage from '../../../Pages/PeoplePage/FaceCircleImage'
@@ -17,15 +19,24 @@ import MergeFaceGroupsModal, {
 import { useDetachImageFaces } from '../../../Pages/PeoplePage/SingleFaceGroup/DetachImageFacesModal'
 import MoveImageFacesModal from '../../../Pages/PeoplePage/SingleFaceGroup/MoveImageFacesModal'
 import { FaceDetails } from '../../../Pages/PeoplePage/PeoplePage'
+import { setFaceGroupCover, setFaceGroupCoverVariables } from './__generated__/setFaceGroupCover'
+
+const SET_FACE_GROUP_COVER_MUTATION = gql`
+  mutation setFaceGroupCover($faceGroupID: ID!, $faceID: ID!) {
+    setFaceGroupCover(faceGroupID: $faceGroupID, faceID: $faceID) {
+      id
+    }
+  }
+`
 
 type PersonMoreMenuItemProps = {
-  label: string
+  displayLabel: string
   className?: string
   onClick(): void
 }
 
 const PersonMoreMenuItem = ({
-  label,
+  displayLabel,
   className,
   onClick,
 }: PersonMoreMenuItemProps) => {
@@ -41,7 +52,7 @@ const PersonMoreMenuItem = ({
             className
           )}
         >
-          {label}
+          {displayLabel}
         </button>
       )}
     </Menu.Item>
@@ -115,6 +126,16 @@ const PersonMoreMenu = ({
     })
   }
 
+  const [setThumbnail] = useMutation<setFaceGroupCover, setFaceGroupCoverVariables>(
+      SET_FACE_GROUP_COVER_MUTATION,
+      {
+        variables: {
+          faceGroupID: face.faceGroup.id,
+          faceID: face.id,
+        },
+      }
+    )
+
   return (
     <>
       <Menu
@@ -129,26 +150,31 @@ const PersonMoreMenu = ({
             <PersonMoreMenuItem
               onClick={() => setChangeLabel(true)}
               className="border-b"
-              label={t('people_page.action_label.change_label', 'Change label')}
+              displayLabel={t('people_page.action_label.change_label', 'Change label')}
+            />
+            <PersonMoreMenuItem
+              onClick={() => setThumbnail()}
+              className="border-b"
+              displayLabel={t('people_page.action_label.set_thumbnail', 'Set thumbnail')}
             />
             <PersonMoreMenuItem
               onClick={() =>
                 setMergeModalState(MergeFaceGroupsModalState.SelectDestination)
               }
               className="border-b"
-              label={t('sidebar.people.action_label.merge_face', 'Merge face')}
+              displayLabel={t('sidebar.people.action_label.merge_face', 'Merge face')}
             />
             <PersonMoreMenuItem
               onClick={() => detachImageFace()}
               className="border-b"
-              label={t(
+              displayLabel={t(
                 'sidebar.people.action_label.detach_image',
                 'Detach image'
               )}
             />
             <PersonMoreMenuItem
               onClick={() => setMoveModalOpen(true)}
-              label={t('sidebar.people.action_label.move_face', 'Move face')}
+              displayLabel={t('sidebar.people.action_label.move_face', 'Move face')}
             />
           </ArrowPopoverPanel>
         </Menu.Items>
@@ -166,6 +192,7 @@ type MediaSidebarFaceProps = {
 const MediaSidebarPerson = ({ face, menuFlipped }: MediaSidebarFaceProps) => {
   const [changeLabel, setChangeLabel] = useState(false)
 
+  const isAdmin = useIsAdmin()
   return (
     <li className="inline-block">
       <Link to={`/people/${face.faceGroup.id}`}>
@@ -179,7 +206,7 @@ const MediaSidebarPerson = ({ face, menuFlipped }: MediaSidebarFaceProps) => {
           editLabel={changeLabel}
           setEditLabel={setChangeLabel}
         />
-        {!changeLabel && (
+        {isAdmin && !changeLabel && (
           <PersonMoreMenu
             menuFlipped={menuFlipped}
             className="pl-0.5"

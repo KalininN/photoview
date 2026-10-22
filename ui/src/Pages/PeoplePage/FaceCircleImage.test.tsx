@@ -1,10 +1,10 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import FaceCircleImage from './FaceCircleImage'
-import { myFaces_myFaceGroups_imageFaces } from './__generated__/myFaces'
+import { myFaces_myFaceGroups_thumbnail } from './__generated__/myFaces'
 
 test('face circle image', () => {
-  const imageFace: myFaces_myFaceGroups_imageFaces = {
+  const imageFace: myFaces_myFaceGroups_thumbnail = {
     __typename: 'ImageFace',
     id: '3',
     media: {

@@ -37,8 +37,8 @@ extend type Mutation {
   shareMedia(mediaId: ID!, expire: Time, password: String): ShareToken! @isAuthorized
 
   "Delete a share token by it's token value"
-  deleteShareToken(token: String!): ShareToken! @isAuthorized
+  deleteShareToken(token: String!): ShareToken! @isAdmin
 
   "Set a password for a token, if null is passed for the password argument, the password will be cleared"
-  protectShareToken(token: String!, password: String): ShareToken! @isAuthorized
+  protectShareToken(token: String!, password: String): ShareToken! @isAdmin
 }

@@ -7,7 +7,7 @@ import Modal from '../../../primitives/Modal'
 import { MY_FACES_QUERY } from '../PeoplePage'
 import {
   myFaces_myFaceGroups,
-  myFaces_myFaceGroups_imageFaces,
+  myFaces_myFaceGroups_thumbnail,
 } from '../__generated__/myFaces'
 import SelectImageFacesTable from './SelectImageFacesTable'
 import {
@@ -41,7 +41,7 @@ export const useDetachImageFaces = (
 
   return async (
     selectedImageFaces: (
-      | myFaces_myFaceGroups_imageFaces
+      | myFaces_myFaceGroups_thumbnail
       | singleFaceGroup_faceGroup_imageFaces
     )[]
   ) => {
@@ -62,7 +62,7 @@ type DetachImageFacesModalProps = {
   setOpen(open: boolean): void
   faceGroup: myFaces_myFaceGroups | singleFaceGroup_faceGroup
   selectedImageFaces?: (
-    | myFaces_myFaceGroups_imageFaces
+    | myFaces_myFaceGroups_thumbnail
     | singleFaceGroup_faceGroup_imageFaces
   )[]
 }
@@ -76,7 +76,7 @@ const DetachImageFacesModal = ({
   const { t } = useTranslation()
 
   const [selectedImageFaces, setSelectedImageFaces] = useState<
-    (myFaces_myFaceGroups_imageFaces | singleFaceGroup_faceGroup_imageFaces)[]
+    (myFaces_myFaceGroups_thumbnail | singleFaceGroup_faceGroup_imageFaces)[]
   >([])
   const navigate = useNavigate()
 

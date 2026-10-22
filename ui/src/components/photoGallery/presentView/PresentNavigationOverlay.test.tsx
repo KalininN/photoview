@@ -1,13 +1,36 @@
 import React from 'react'
 import PresentNavigationOverlay from './PresentNavigationOverlay'
 import { fireEvent, render, screen, act } from '@testing-library/react'
+import { MockedProvider } from '@apollo/client/testing'
+import { MediaType } from '../../../__generated__/globalTypes'
+import { MediaGalleryFields } from '../__generated__/MediaGalleryFields'
+
+// Fork-specific: the overlay shows a like button for the media
+const media: MediaGalleryFields = {
+  __typename: 'Media',
+  id: '1',
+  type: MediaType.Photo,
+  blurhash: null,
+  thumbnail: null,
+  highRes: null,
+  videoWeb: null,
+  favorite: false,
+  likes: 0,
+}
+
+const renderOverlay = (dispatchMedia: () => void) =>
+  render(
+    <MockedProvider>
+      <PresentNavigationOverlay dispatchMedia={dispatchMedia} media={media} />
+    </MockedProvider>
+  )
 
 vi.useFakeTimers()
 
 describe('PresentNavigationOverlay component', () => {
   test('simple render', () => {
     const dispatchMedia = vi.fn()
-    render(<PresentNavigationOverlay dispatchMedia={dispatchMedia} />)
+    renderOverlay(dispatchMedia)
 
     expect(screen.getByLabelText('Previous image')).toBeInTheDocument()
     expect(screen.getByLabelText('Next image')).toBeInTheDocument()
@@ -16,7 +39,7 @@ describe('PresentNavigationOverlay component', () => {
 
   test('click buttons', () => {
     const dispatchMedia = vi.fn()
-    render(<PresentNavigationOverlay dispatchMedia={dispatchMedia} />)
+    renderOverlay(dispatchMedia)
 
     expect(dispatchMedia).not.toHaveBeenCalled()
 
@@ -29,9 +52,7 @@ describe('PresentNavigationOverlay component', () => {
 
   test('mouse move, show and hide', () => {
     const dispatchMedia = vi.fn()
-    const { container } = render(
-      <PresentNavigationOverlay dispatchMedia={dispatchMedia} />
-    )
+    const { container } = renderOverlay(dispatchMedia)
 
     expect(screen.getByLabelText('Next image')).toHaveClass('hide')
 

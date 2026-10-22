@@ -89,7 +89,7 @@ RUN set -a && source /env && set +a \
 COPY api /app/api
 RUN set -a && source /env && set +a \
     && go env \
-    && go build -v -o photoview .
+    && go build -v -tags faces_exif -o photoview .
 
 ### Build release image ###
 FROM debian:bookworm-slim AS release

@@ -10,6 +10,8 @@ import {
 import {
   toggleFavoriteAction,
   useMarkFavoriteMutation,
+  likePressed,
+  useLikeMediaMutation,
 } from './photoGalleryMutations'
 import MediaSidebar from '../sidebar/MediaSidebar/MediaSidebar'
 import { SidebarContext } from '../sidebar/Sidebar'
@@ -51,6 +53,7 @@ export const MEDIA_GALLERY_FRAGMENT = gql`
       url
     }
     favorite
+    likes
   }
 `
 
@@ -62,6 +65,7 @@ type MediaGalleryProps = {
 
 const MediaGallery = ({ mediaState, dispatchMedia }: MediaGalleryProps) => {
   const [markFavorite] = useMarkFavoriteMutation()
+  const [likeMedia] = useLikeMediaMutation()
 
   const { media, activeIndex, presenting } = mediaState
 
@@ -88,6 +92,12 @@ const MediaGallery = ({ mediaState, dispatchMedia }: MediaGalleryProps) => {
             toggleFavoriteAction({
               media,
               markFavorite,
+            })
+          }}
+          clickLike={() => {
+            likePressed({
+              media,
+              likeMedia,
             })
           }}
           clickPresent={() => {

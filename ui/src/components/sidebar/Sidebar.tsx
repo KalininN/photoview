@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
+ 
 
 export type UpdateSidebarFn = (content: React.ReactNode) => void
 export type SidebarPinnedFn = (pin: boolean) => void
@@ -40,6 +42,12 @@ export const SidebarProvider = ({ children }: SidebarProviderProps) => {
     content: null,
     pinned: false,
   })
+  const location = useLocation()
+
+  // Close the sidebar when the route changes
+  useEffect(() => {
+    setState(prev => (prev.pinned ? prev : { ...prev, content: null }))
+  }, [location.pathname])
 
   const updateSidebar = (content: React.ReactNode | null) => {
     if (content) {

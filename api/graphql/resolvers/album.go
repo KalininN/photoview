@@ -116,6 +116,26 @@ func (r *mutationResolver) SetAlbumCover(ctx context.Context, coverID int) (*mod
 	return actions.SetAlbumCover(r.DB(ctx), user, coverID)
 }
 
+// SetAlbumTitle is the resolver for the setAlbumTitle field.
+func (r *mutationResolver) SetAlbumTitle(ctx context.Context, albumID int, title string) (*models.Album, error) {
+	user := auth.UserFromContext(ctx)
+	if user == nil {
+		return nil, errors.New("unauthorized")
+	}
+
+	return actions.SetAlbumTitle(r.DB(ctx), user, albumID, title)
+}
+
+// ResetAlbumTitle is the resolver for the resetAlbumTitle field.
+func (r *mutationResolver) ResetAlbumTitle(ctx context.Context, albumID int) (*models.Album, error) {
+	user := auth.UserFromContext(ctx)
+	if user == nil {
+		return nil, errors.New("unauthorized")
+	}
+
+	return actions.ResetAlbumTitle(r.DB(ctx), user, albumID)
+}
+
 // MyAlbums is the resolver for the myAlbums field.
 func (r *queryResolver) MyAlbums(ctx context.Context, order *models.Ordering, paginate *models.Pagination, onlyRoot *bool, showEmpty *bool, onlyWithFavorites *bool) ([]*models.Album, error) {
 	user := auth.UserFromContext(ctx)

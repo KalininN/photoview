@@ -84,10 +84,12 @@ type ComplexityRoot struct {
 	}
 
 	FaceGroup struct {
+		DisplayLabel   func(childComplexity int) int
 		ID             func(childComplexity int) int
 		ImageFaceCount func(childComplexity int) int
-		ImageFaces     func(childComplexity int, paginate *models.Pagination) int
+		ImageFaces     func(childComplexity int, minRating *int, paginate *models.Pagination) int
 		Label          func(childComplexity int) int
+		Thumbnail      func(childComplexity int) int
 	}
 
 	FaceRectangle struct {
@@ -114,6 +116,7 @@ type ComplexityRoot struct {
 		Favorite      func(childComplexity int) int
 		HighRes       func(childComplexity int) int
 		ID            func(childComplexity int) int
+		Likes         func(childComplexity int) int
 		Path          func(childComplexity int) int
 		Rating        func(childComplexity int) int
 		Shares        func(childComplexity int) int
@@ -164,14 +167,18 @@ type ComplexityRoot struct {
 		DetachImageFaces            func(childComplexity int, imageFaceIDs []int) int
 		FavoriteMedia               func(childComplexity int, mediaID int, favorite bool) int
 		InitialSetupWizard          func(childComplexity int, username string, password string, rootPath string) int
+		LikeMedia                   func(childComplexity int, mediaID int) int
 		MoveImageFaces              func(childComplexity int, imageFaceIDs []int, destinationFaceGroupID int) int
 		ProtectShareToken           func(childComplexity int, token string, password *string) int
 		RecognizeUnlabeledFaces     func(childComplexity int) int
 		ResetAlbumCover             func(childComplexity int, albumID int) int
+		ResetAlbumTitle             func(childComplexity int, albumID int) int
 		ScanAll                     func(childComplexity int) int
 		ScanUser                    func(childComplexity int, userID int) int
 		SetAlbumCover               func(childComplexity int, coverID int) int
-		SetFaceGroupLabel           func(childComplexity int, faceGroupID int, label *string) int
+		SetAlbumTitle               func(childComplexity int, albumID int, title string) int
+		SetFaceGroupCover           func(childComplexity int, faceGroupID int, faceID int) int
+		SetFaceGroupLabel           func(childComplexity int, faceGroupID int, displayLabel *string) int
 		SetPeriodicScanInterval     func(childComplexity int, interval int) int
 		SetScannerConcurrentWorkers func(childComplexity int, workers int) int
 		ShareAlbum                  func(childComplexity int, albumID int, expire *time.Time, password *string) int
@@ -291,7 +298,8 @@ type AlbumResolver interface {
 	Shares(ctx context.Context, obj *models.Album) ([]*models.ShareToken, error)
 }
 type FaceGroupResolver interface {
-	ImageFaces(ctx context.Context, obj *models.FaceGroup, paginate *models.Pagination) ([]*models.ImageFace, error)
+	Thumbnail(ctx context.Context, obj *models.FaceGroup) (*models.ImageFace, error)
+	ImageFaces(ctx context.Context, obj *models.FaceGroup, minRating *int, paginate *models.Pagination) ([]*models.ImageFace, error)
 	ImageFaceCount(ctx context.Context, obj *models.FaceGroup) (int, error)
 }
 type ImageFaceResolver interface {
@@ -316,12 +324,16 @@ type MediaResolver interface {
 type MutationResolver interface {
 	ResetAlbumCover(ctx context.Context, albumID int) (*models.Album, error)
 	SetAlbumCover(ctx context.Context, coverID int) (*models.Album, error)
-	SetFaceGroupLabel(ctx context.Context, faceGroupID int, label *string) (*models.FaceGroup, error)
+	SetAlbumTitle(ctx context.Context, albumID int, title string) (*models.Album, error)
+	ResetAlbumTitle(ctx context.Context, albumID int) (*models.Album, error)
+	SetFaceGroupLabel(ctx context.Context, faceGroupID int, displayLabel *string) (*models.FaceGroup, error)
+	SetFaceGroupCover(ctx context.Context, faceGroupID int, faceID int) (*models.FaceGroup, error)
 	CombineFaceGroups(ctx context.Context, destinationFaceGroupID int, sourceFaceGroupIDs []int) (*models.FaceGroup, error)
 	MoveImageFaces(ctx context.Context, imageFaceIDs []int, destinationFaceGroupID int) (*models.FaceGroup, error)
 	RecognizeUnlabeledFaces(ctx context.Context) ([]*models.ImageFace, error)
 	DetachImageFaces(ctx context.Context, imageFaceIDs []int) (*models.FaceGroup, error)
 	FavoriteMedia(ctx context.Context, mediaID int, favorite bool) (*models.Media, error)
+	LikeMedia(ctx context.Context, mediaID int) (*models.Media, error)
 	ScanAll(ctx context.Context) (*models.ScannerResult, error)
 	ScanUser(ctx context.Context, userID int) (*models.ScannerResult, error)
 	SetPeriodicScanInterval(ctx context.Context, interval int) (int, error)
@@ -506,6 +518,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Coordinates.Longitude(childComplexity), true
 
+	case "FaceGroup.displayLabel":
+		if e.complexity.FaceGroup.DisplayLabel == nil {
+			break
+		}
+
+		return e.complexity.FaceGroup.DisplayLabel(childComplexity), true
+
 	case "FaceGroup.id":
 		if e.complexity.FaceGroup.ID == nil {
 			break
@@ -530,7 +549,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.FaceGroup.ImageFaces(childComplexity, args["paginate"].(*models.Pagination)), true
+		return e.complexity.FaceGroup.ImageFaces(childComplexity, args["minRating"].(*int), args["paginate"].(*models.Pagination)), true
 
 	case "FaceGroup.label":
 		if e.complexity.FaceGroup.Label == nil {
@@ -538,6 +557,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FaceGroup.Label(childComplexity), true
+
+	case "FaceGroup.thumbnail":
+		if e.complexity.FaceGroup.Thumbnail == nil {
+			break
+		}
+
+		return e.complexity.FaceGroup.Thumbnail(childComplexity), true
 
 	case "FaceRectangle.maxX":
 		if e.complexity.FaceRectangle.MaxX == nil {
@@ -657,6 +683,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Media.ID(childComplexity), true
+
+	case "Media.likes":
+		if e.complexity.Media.Likes == nil {
+			break
+		}
+
+		return e.complexity.Media.Likes(childComplexity), true
 
 	case "Media.path":
 		if e.complexity.Media.Path == nil {
@@ -969,6 +1002,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.InitialSetupWizard(childComplexity, args["username"].(string), args["password"].(string), args["rootPath"].(string)), true
 
+	case "Mutation.likeMedia":
+		if e.complexity.Mutation.LikeMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_likeMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LikeMedia(childComplexity, args["mediaId"].(int)), true
+
 	case "Mutation.moveImageFaces":
 		if e.complexity.Mutation.MoveImageFaces == nil {
 			break
@@ -1012,6 +1057,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.ResetAlbumCover(childComplexity, args["albumID"].(int)), true
 
+	case "Mutation.resetAlbumTitle":
+		if e.complexity.Mutation.ResetAlbumTitle == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resetAlbumTitle_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ResetAlbumTitle(childComplexity, args["albumID"].(int)), true
+
 	case "Mutation.scanAll":
 		if e.complexity.Mutation.ScanAll == nil {
 			break
@@ -1043,6 +1100,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.SetAlbumCover(childComplexity, args["coverID"].(int)), true
 
+	case "Mutation.setAlbumTitle":
+		if e.complexity.Mutation.SetAlbumTitle == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setAlbumTitle_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetAlbumTitle(childComplexity, args["albumID"].(int), args["title"].(string)), true
+
+	case "Mutation.setFaceGroupCover":
+		if e.complexity.Mutation.SetFaceGroupCover == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setFaceGroupCover_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetFaceGroupCover(childComplexity, args["faceGroupID"].(int), args["faceID"].(int)), true
+
 	case "Mutation.setFaceGroupLabel":
 		if e.complexity.Mutation.SetFaceGroupLabel == nil {
 			break
@@ -1053,7 +1134,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SetFaceGroupLabel(childComplexity, args["faceGroupID"].(int), args["label"].(*string)), true
+		return e.complexity.Mutation.SetFaceGroupLabel(childComplexity, args["faceGroupID"].(int), args["displayLabel"].(*string)), true
 
 	case "Mutation.setPeriodicScanInterval":
 		if e.complexity.Mutation.SetPeriodicScanInterval == nil {
@@ -1960,13 +2041,36 @@ func (ec *executionContext) field_Album_subAlbums_argsPaginate(
 func (ec *executionContext) field_FaceGroup_imageFaces_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_FaceGroup_imageFaces_argsPaginate(ctx, rawArgs)
+	arg0, err := ec.field_FaceGroup_imageFaces_argsMinRating(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["paginate"] = arg0
+	args["minRating"] = arg0
+	arg1, err := ec.field_FaceGroup_imageFaces_argsPaginate(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["paginate"] = arg1
 	return args, nil
 }
+func (ec *executionContext) field_FaceGroup_imageFaces_argsMinRating(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*int, error) {
+	if _, ok := rawArgs["minRating"]; !ok {
+		var zeroVal *int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("minRating"))
+	if tmp, ok := rawArgs["minRating"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_FaceGroup_imageFaces_argsPaginate(
 	ctx context.Context,
 	rawArgs map[string]any,
@@ -2398,6 +2502,34 @@ func (ec *executionContext) field_Mutation_initialSetupWizard_argsRootPath(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_likeMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_likeMedia_argsMediaID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["mediaId"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_likeMedia_argsMediaID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	if _, ok := rawArgs["mediaId"]; !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("mediaId"))
+	if tmp, ok := rawArgs["mediaId"]; ok {
+		return ec.unmarshalNID2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_moveImageFaces_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2528,6 +2660,34 @@ func (ec *executionContext) field_Mutation_resetAlbumCover_argsAlbumID(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_resetAlbumTitle_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_resetAlbumTitle_argsAlbumID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["albumID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_resetAlbumTitle_argsAlbumID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	if _, ok := rawArgs["albumID"]; !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("albumID"))
+	if tmp, ok := rawArgs["albumID"]; ok {
+		return ec.unmarshalNID2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_scanUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2584,6 +2744,108 @@ func (ec *executionContext) field_Mutation_setAlbumCover_argsCoverID(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_setAlbumTitle_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_setAlbumTitle_argsAlbumID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["albumID"] = arg0
+	arg1, err := ec.field_Mutation_setAlbumTitle_argsTitle(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["title"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_setAlbumTitle_argsAlbumID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	if _, ok := rawArgs["albumID"]; !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("albumID"))
+	if tmp, ok := rawArgs["albumID"]; ok {
+		return ec.unmarshalNID2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_setAlbumTitle_argsTitle(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	if _, ok := rawArgs["title"]; !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+	if tmp, ok := rawArgs["title"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_setFaceGroupCover_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_setFaceGroupCover_argsFaceGroupID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["faceGroupID"] = arg0
+	arg1, err := ec.field_Mutation_setFaceGroupCover_argsFaceID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["faceID"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_setFaceGroupCover_argsFaceGroupID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	if _, ok := rawArgs["faceGroupID"]; !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("faceGroupID"))
+	if tmp, ok := rawArgs["faceGroupID"]; ok {
+		return ec.unmarshalNID2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_setFaceGroupCover_argsFaceID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	if _, ok := rawArgs["faceID"]; !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("faceID"))
+	if tmp, ok := rawArgs["faceID"]; ok {
+		return ec.unmarshalNID2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_setFaceGroupLabel_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2592,11 +2854,11 @@ func (ec *executionContext) field_Mutation_setFaceGroupLabel_args(ctx context.Co
 		return nil, err
 	}
 	args["faceGroupID"] = arg0
-	arg1, err := ec.field_Mutation_setFaceGroupLabel_argsLabel(ctx, rawArgs)
+	arg1, err := ec.field_Mutation_setFaceGroupLabel_argsDisplayLabel(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["label"] = arg1
+	args["displayLabel"] = arg1
 	return args, nil
 }
 func (ec *executionContext) field_Mutation_setFaceGroupLabel_argsFaceGroupID(
@@ -2617,17 +2879,17 @@ func (ec *executionContext) field_Mutation_setFaceGroupLabel_argsFaceGroupID(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Mutation_setFaceGroupLabel_argsLabel(
+func (ec *executionContext) field_Mutation_setFaceGroupLabel_argsDisplayLabel(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (*string, error) {
-	if _, ok := rawArgs["label"]; !ok {
+	if _, ok := rawArgs["displayLabel"]; !ok {
 		var zeroVal *string
 		return zeroVal, nil
 	}
 
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
-	if tmp, ok := rawArgs["label"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("displayLabel"))
+	if tmp, ok := rawArgs["displayLabel"]; ok {
 		return ec.unmarshalOString2ᚖstring(ctx, tmp)
 	}
 
@@ -3982,6 +4244,8 @@ func (ec *executionContext) fieldContext_Album_media(ctx context.Context, field 
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -4310,6 +4574,8 @@ func (ec *executionContext) fieldContext_Album_thumbnail(_ context.Context, fiel
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -4745,6 +5011,101 @@ func (ec *executionContext) fieldContext_FaceGroup_label(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _FaceGroup_displayLabel(ctx context.Context, field graphql.CollectedField, obj *models.FaceGroup) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FaceGroup_displayLabel(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DisplayLabel, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FaceGroup_displayLabel(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FaceGroup",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FaceGroup_thumbnail(ctx context.Context, field graphql.CollectedField, obj *models.FaceGroup) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FaceGroup_thumbnail(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.FaceGroup().Thumbnail(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.ImageFace)
+	fc.Result = res
+	return ec.marshalNImageFace2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐImageFace(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FaceGroup_thumbnail(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FaceGroup",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ImageFace_id(ctx, field)
+			case "media":
+				return ec.fieldContext_ImageFace_media(ctx, field)
+			case "rectangle":
+				return ec.fieldContext_ImageFace_rectangle(ctx, field)
+			case "faceGroup":
+				return ec.fieldContext_ImageFace_faceGroup(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ImageFace", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _FaceGroup_imageFaces(ctx context.Context, field graphql.CollectedField, obj *models.FaceGroup) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_FaceGroup_imageFaces(ctx, field)
 	if err != nil {
@@ -4759,7 +5120,7 @@ func (ec *executionContext) _FaceGroup_imageFaces(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.FaceGroup().ImageFaces(rctx, obj, fc.Args["paginate"].(*models.Pagination))
+		return ec.resolvers.FaceGroup().ImageFaces(rctx, obj, fc.Args["minRating"].(*int), fc.Args["paginate"].(*models.Pagination))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5147,6 +5508,8 @@ func (ec *executionContext) fieldContext_ImageFace_media(_ context.Context, fiel
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -5251,6 +5614,10 @@ func (ec *executionContext) fieldContext_ImageFace_faceGroup(_ context.Context, 
 				return ec.fieldContext_FaceGroup_id(ctx, field)
 			case "label":
 				return ec.fieldContext_FaceGroup_label(ctx, field)
+			case "displayLabel":
+				return ec.fieldContext_FaceGroup_displayLabel(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FaceGroup_thumbnail(ctx, field)
 			case "imageFaces":
 				return ec.fieldContext_FaceGroup_imageFaces(ctx, field)
 			case "imageFaceCount":
@@ -6127,6 +6494,47 @@ func (ec *executionContext) fieldContext_Media_rating(_ context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Media_likes(ctx context.Context, field graphql.CollectedField, obj *models.Media) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Media_likes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Likes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalOInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Media_likes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MediaDownload_title(ctx context.Context, field graphql.CollectedField, obj *models.MediaDownload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MediaDownload_title(ctx, field)
 	if err != nil {
@@ -6342,6 +6750,8 @@ func (ec *executionContext) fieldContext_MediaEXIF_media(_ context.Context, fiel
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -7083,11 +7493,11 @@ func (ec *executionContext) _Mutation_resetAlbumCover(ctx context.Context, field
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.Album
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7182,11 +7592,11 @@ func (ec *executionContext) _Mutation_setAlbumCover(ctx context.Context, field g
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.Album
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7262,6 +7672,204 @@ func (ec *executionContext) fieldContext_Mutation_setAlbumCover(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_setAlbumTitle(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_setAlbumTitle(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().SetAlbumTitle(rctx, fc.Args["albumID"].(int), fc.Args["title"].(string))
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			if ec.directives.IsAdmin == nil {
+				var zeroVal *models.Album
+				return zeroVal, errors.New("directive isAdmin is not implemented")
+			}
+			return ec.directives.IsAdmin(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Album); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/photoview/photoview/api/graphql/models.Album`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Album)
+	fc.Result = res
+	return ec.marshalNAlbum2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐAlbum(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_setAlbumTitle(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Album_id(ctx, field)
+			case "title":
+				return ec.fieldContext_Album_title(ctx, field)
+			case "media":
+				return ec.fieldContext_Album_media(ctx, field)
+			case "subAlbums":
+				return ec.fieldContext_Album_subAlbums(ctx, field)
+			case "parentAlbum":
+				return ec.fieldContext_Album_parentAlbum(ctx, field)
+			case "owner":
+				return ec.fieldContext_Album_owner(ctx, field)
+			case "filePath":
+				return ec.fieldContext_Album_filePath(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Album_thumbnail(ctx, field)
+			case "path":
+				return ec.fieldContext_Album_path(ctx, field)
+			case "shares":
+				return ec.fieldContext_Album_shares(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Album", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setAlbumTitle_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_resetAlbumTitle(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_resetAlbumTitle(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ResetAlbumTitle(rctx, fc.Args["albumID"].(int))
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			if ec.directives.IsAdmin == nil {
+				var zeroVal *models.Album
+				return zeroVal, errors.New("directive isAdmin is not implemented")
+			}
+			return ec.directives.IsAdmin(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Album); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/photoview/photoview/api/graphql/models.Album`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Album)
+	fc.Result = res
+	return ec.marshalNAlbum2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐAlbum(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resetAlbumTitle(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Album_id(ctx, field)
+			case "title":
+				return ec.fieldContext_Album_title(ctx, field)
+			case "media":
+				return ec.fieldContext_Album_media(ctx, field)
+			case "subAlbums":
+				return ec.fieldContext_Album_subAlbums(ctx, field)
+			case "parentAlbum":
+				return ec.fieldContext_Album_parentAlbum(ctx, field)
+			case "owner":
+				return ec.fieldContext_Album_owner(ctx, field)
+			case "filePath":
+				return ec.fieldContext_Album_filePath(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Album_thumbnail(ctx, field)
+			case "path":
+				return ec.fieldContext_Album_path(ctx, field)
+			case "shares":
+				return ec.fieldContext_Album_shares(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Album", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resetAlbumTitle_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_setFaceGroupLabel(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_setFaceGroupLabel(ctx, field)
 	if err != nil {
@@ -7277,15 +7885,15 @@ func (ec *executionContext) _Mutation_setFaceGroupLabel(ctx context.Context, fie
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		directive0 := func(rctx context.Context) (any, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().SetFaceGroupLabel(rctx, fc.Args["faceGroupID"].(int), fc.Args["label"].(*string))
+			return ec.resolvers.Mutation().SetFaceGroupLabel(rctx, fc.Args["faceGroupID"].(int), fc.Args["displayLabel"].(*string))
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.FaceGroup
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7327,6 +7935,10 @@ func (ec *executionContext) fieldContext_Mutation_setFaceGroupLabel(ctx context.
 				return ec.fieldContext_FaceGroup_id(ctx, field)
 			case "label":
 				return ec.fieldContext_FaceGroup_label(ctx, field)
+			case "displayLabel":
+				return ec.fieldContext_FaceGroup_displayLabel(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FaceGroup_thumbnail(ctx, field)
 			case "imageFaces":
 				return ec.fieldContext_FaceGroup_imageFaces(ctx, field)
 			case "imageFaceCount":
@@ -7343,6 +7955,97 @@ func (ec *executionContext) fieldContext_Mutation_setFaceGroupLabel(ctx context.
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_setFaceGroupLabel_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setFaceGroupCover(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_setFaceGroupCover(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().SetFaceGroupCover(rctx, fc.Args["faceGroupID"].(int), fc.Args["faceID"].(int))
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			if ec.directives.IsAdmin == nil {
+				var zeroVal *models.FaceGroup
+				return zeroVal, errors.New("directive isAdmin is not implemented")
+			}
+			return ec.directives.IsAdmin(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.FaceGroup); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/photoview/photoview/api/graphql/models.FaceGroup`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.FaceGroup)
+	fc.Result = res
+	return ec.marshalNFaceGroup2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐFaceGroup(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_setFaceGroupCover(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FaceGroup_id(ctx, field)
+			case "label":
+				return ec.fieldContext_FaceGroup_label(ctx, field)
+			case "displayLabel":
+				return ec.fieldContext_FaceGroup_displayLabel(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FaceGroup_thumbnail(ctx, field)
+			case "imageFaces":
+				return ec.fieldContext_FaceGroup_imageFaces(ctx, field)
+			case "imageFaceCount":
+				return ec.fieldContext_FaceGroup_imageFaceCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FaceGroup", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setFaceGroupCover_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7368,11 +8071,11 @@ func (ec *executionContext) _Mutation_combineFaceGroups(ctx context.Context, fie
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.FaceGroup
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7414,6 +8117,10 @@ func (ec *executionContext) fieldContext_Mutation_combineFaceGroups(ctx context.
 				return ec.fieldContext_FaceGroup_id(ctx, field)
 			case "label":
 				return ec.fieldContext_FaceGroup_label(ctx, field)
+			case "displayLabel":
+				return ec.fieldContext_FaceGroup_displayLabel(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FaceGroup_thumbnail(ctx, field)
 			case "imageFaces":
 				return ec.fieldContext_FaceGroup_imageFaces(ctx, field)
 			case "imageFaceCount":
@@ -7455,11 +8162,11 @@ func (ec *executionContext) _Mutation_moveImageFaces(ctx context.Context, field 
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.FaceGroup
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7501,6 +8208,10 @@ func (ec *executionContext) fieldContext_Mutation_moveImageFaces(ctx context.Con
 				return ec.fieldContext_FaceGroup_id(ctx, field)
 			case "label":
 				return ec.fieldContext_FaceGroup_label(ctx, field)
+			case "displayLabel":
+				return ec.fieldContext_FaceGroup_displayLabel(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FaceGroup_thumbnail(ctx, field)
 			case "imageFaces":
 				return ec.fieldContext_FaceGroup_imageFaces(ctx, field)
 			case "imageFaceCount":
@@ -7542,11 +8253,11 @@ func (ec *executionContext) _Mutation_recognizeUnlabeledFaces(ctx context.Contex
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal []*models.ImageFace
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7618,11 +8329,11 @@ func (ec *executionContext) _Mutation_detachImageFaces(ctx context.Context, fiel
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.FaceGroup
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -7664,6 +8375,10 @@ func (ec *executionContext) fieldContext_Mutation_detachImageFaces(ctx context.C
 				return ec.fieldContext_FaceGroup_id(ctx, field)
 			case "label":
 				return ec.fieldContext_FaceGroup_label(ctx, field)
+			case "displayLabel":
+				return ec.fieldContext_FaceGroup_displayLabel(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FaceGroup_thumbnail(ctx, field)
 			case "imageFaces":
 				return ec.fieldContext_FaceGroup_imageFaces(ctx, field)
 			case "imageFaceCount":
@@ -7781,6 +8496,8 @@ func (ec *executionContext) fieldContext_Mutation_favoriteMedia(ctx context.Cont
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -7793,6 +8510,121 @@ func (ec *executionContext) fieldContext_Mutation_favoriteMedia(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_favoriteMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_likeMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_likeMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().LikeMedia(rctx, fc.Args["mediaId"].(int))
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			if ec.directives.IsAuthorized == nil {
+				var zeroVal *models.Media
+				return zeroVal, errors.New("directive isAuthorized is not implemented")
+			}
+			return ec.directives.IsAuthorized(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Media); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/photoview/photoview/api/graphql/models.Media`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Media)
+	fc.Result = res
+	return ec.marshalNMedia2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐMedia(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_likeMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Media_id(ctx, field)
+			case "title":
+				return ec.fieldContext_Media_title(ctx, field)
+			case "path":
+				return ec.fieldContext_Media_path(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_Media_thumbnail(ctx, field)
+			case "highRes":
+				return ec.fieldContext_Media_highRes(ctx, field)
+			case "videoWeb":
+				return ec.fieldContext_Media_videoWeb(ctx, field)
+			case "album":
+				return ec.fieldContext_Media_album(ctx, field)
+			case "exif":
+				return ec.fieldContext_Media_exif(ctx, field)
+			case "videoMetadata":
+				return ec.fieldContext_Media_videoMetadata(ctx, field)
+			case "favorite":
+				return ec.fieldContext_Media_favorite(ctx, field)
+			case "type":
+				return ec.fieldContext_Media_type(ctx, field)
+			case "date":
+				return ec.fieldContext_Media_date(ctx, field)
+			case "blurhash":
+				return ec.fieldContext_Media_blurhash(ctx, field)
+			case "shares":
+				return ec.fieldContext_Media_shares(ctx, field)
+			case "downloads":
+				return ec.fieldContext_Media_downloads(ctx, field)
+			case "faces":
+				return ec.fieldContext_Media_faces(ctx, field)
+			case "rating":
+				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_likeMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8321,11 +9153,11 @@ func (ec *executionContext) _Mutation_deleteShareToken(ctx context.Context, fiel
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.ShareToken
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -8414,11 +9246,11 @@ func (ec *executionContext) _Mutation_protectShareToken(ctx context.Context, fie
 		}
 
 		directive1 := func(ctx context.Context) (any, error) {
-			if ec.directives.IsAuthorized == nil {
+			if ec.directives.IsAdmin == nil {
 				var zeroVal *models.ShareToken
-				return zeroVal, errors.New("directive isAuthorized is not implemented")
+				return zeroVal, errors.New("directive isAdmin is not implemented")
 			}
-			return ec.directives.IsAuthorized(ctx, nil, directive0)
+			return ec.directives.IsAdmin(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -9740,6 +10572,10 @@ func (ec *executionContext) fieldContext_Query_myFaceGroups(ctx context.Context,
 				return ec.fieldContext_FaceGroup_id(ctx, field)
 			case "label":
 				return ec.fieldContext_FaceGroup_label(ctx, field)
+			case "displayLabel":
+				return ec.fieldContext_FaceGroup_displayLabel(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FaceGroup_thumbnail(ctx, field)
 			case "imageFaces":
 				return ec.fieldContext_FaceGroup_imageFaces(ctx, field)
 			case "imageFaceCount":
@@ -9827,6 +10663,10 @@ func (ec *executionContext) fieldContext_Query_faceGroup(ctx context.Context, fi
 				return ec.fieldContext_FaceGroup_id(ctx, field)
 			case "label":
 				return ec.fieldContext_FaceGroup_label(ctx, field)
+			case "displayLabel":
+				return ec.fieldContext_FaceGroup_displayLabel(ctx, field)
+			case "thumbnail":
+				return ec.fieldContext_FaceGroup_thumbnail(ctx, field)
 			case "imageFaces":
 				return ec.fieldContext_FaceGroup_imageFaces(ctx, field)
 			case "imageFaceCount":
@@ -9944,6 +10784,8 @@ func (ec *executionContext) fieldContext_Query_myMedia(ctx context.Context, fiel
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -10035,6 +10877,8 @@ func (ec *executionContext) fieldContext_Query_media(ctx context.Context, field 
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -10126,6 +10970,8 @@ func (ec *executionContext) fieldContext_Query_mediaList(ctx context.Context, fi
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -10589,6 +11435,8 @@ func (ec *executionContext) fieldContext_Query_myTimeline(ctx context.Context, f
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -11330,6 +12178,8 @@ func (ec *executionContext) fieldContext_SearchResult_media(_ context.Context, f
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -11699,6 +12549,8 @@ func (ec *executionContext) fieldContext_ShareToken_media(_ context.Context, fie
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -12141,6 +12993,8 @@ func (ec *executionContext) fieldContext_TimelineGroup_media(_ context.Context, 
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -12746,6 +13600,8 @@ func (ec *executionContext) fieldContext_VideoMetadata_media(_ context.Context, 
 				return ec.fieldContext_Media_faces(ctx, field)
 			case "rating":
 				return ec.fieldContext_Media_rating(ctx, field)
+			case "likes":
+				return ec.fieldContext_Media_likes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -15523,6 +16379,44 @@ func (ec *executionContext) _FaceGroup(ctx context.Context, sel ast.SelectionSet
 			}
 		case "label":
 			out.Values[i] = ec._FaceGroup_label(ctx, field, obj)
+		case "displayLabel":
+			out.Values[i] = ec._FaceGroup_displayLabel(ctx, field, obj)
+		case "thumbnail":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FaceGroup_thumbnail(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "imageFaces":
 			field := field
 
@@ -16173,6 +17067,8 @@ func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, ob
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "rating":
 			out.Values[i] = ec._Media_rating(ctx, field, obj)
+		case "likes":
+			out.Values[i] = ec._Media_likes(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -16397,9 +17293,30 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "setAlbumTitle":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setAlbumTitle(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resetAlbumTitle":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resetAlbumTitle(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "setFaceGroupLabel":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setFaceGroupLabel(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setFaceGroupCover":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setFaceGroupCover(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -16435,6 +17352,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "favoriteMedia":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_favoriteMedia(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "likeMedia":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_likeMedia(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -18199,6 +19123,10 @@ func (ec *executionContext) marshalNID2ᚕintᚄ(ctx context.Context, sel ast.Se
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNImageFace2githubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐImageFace(ctx context.Context, sel ast.SelectionSet, v models.ImageFace) graphql.Marshaler {
+	return ec._ImageFace(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNImageFace2ᚕᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐImageFaceᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.ImageFace) graphql.Marshaler {

@@ -13,6 +13,7 @@ export interface TimelineMediaIndex {
 export interface TimelineGalleryState {
   presenting: boolean
   timelineGroups: TimelineGroup[]
+  timelineMediaIds: string[]
   activeIndex: TimelineMediaIndex
 }
 
@@ -22,6 +23,14 @@ export type TimelineGalleryAction =
   | { type: 'selectImage'; index: TimelineMediaIndex }
   | { type: 'openPresentMode'; activeIndex: TimelineMediaIndex }
 
+const arraysEqual = (a: string[], b: string[]) => {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false
+  }
+  return true
+}
+
 export function timelineGalleryReducer(
   state: TimelineGalleryState,
   action: TimelineGalleryAction
@@ -29,15 +38,17 @@ export function timelineGalleryReducer(
   switch (action.type) {
     case 'replaceTimelineGroups': {
       const timelineGroups = convertMediaToTimelineGroups(action.timeline)
-
+      const existingMediaList = state.timelineMediaIds
+      const updatedMediaList = action.timeline.map(m => m.id)
+      const mediaChanged = !arraysEqual(existingMediaList, updatedMediaList);
+      const updatedActiveIndex = (mediaChanged ? {album: -1, date: -1, media: -1} : state.activeIndex);
+      const updatedPresenting = (mediaChanged ? false : state.presenting);
       return {
         ...state,
-        activeIndex: {
-          album: -1,
-          date: -1,
-          media: -1,
-        },
+        presenting: updatedPresenting,
+        activeIndex: updatedActiveIndex,
         timelineGroups,
+        timelineMediaIds: updatedMediaList,
       }
     }
     case 'nextImage': {

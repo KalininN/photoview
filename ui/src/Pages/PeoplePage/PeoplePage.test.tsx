@@ -13,6 +13,13 @@ import { myFaces_myFaceGroups } from './__generated__/myFaces'
 
 vi.mock('../../hooks/useScrollPagination')
 
+// Fork-specific: only admins can edit face groups
+vi.mock('../../components/routes/AuthorizedRoute', () => ({
+  useIsAdmin: () => true,
+  Authorized: ({ children }: { children: JSX.Element }) => children,
+  default: ({ children }: { children: JSX.Element }) => children,
+}))
+
 describe('PeoplePage component', () => {
   const graphqlMocks = [
     {
@@ -30,38 +37,38 @@ describe('PeoplePage component', () => {
               __typename: 'FaceGroup',
               id: '3',
               label: 'Person A',
+              displayLabel: 'Person A',
               imageFaceCount: 2,
-              imageFaces: [
-                {
-                  __typename: 'ImageFace',
-                  id: '3',
-                  rectangle: {
-                    __typename: 'FaceRectangle',
-                    minX: 0.2705079913139343,
-                    maxX: 0.3408200144767761,
-                    minY: 0.7691109776496887,
-                    maxY: 0.881434977054596,
-                  },
-                  media: {
-                    __typename: 'Media',
-                    id: '63',
-                    title: 'image.jpg',
-                    thumbnail: {
-                      __typename: 'MediaURL',
-                      url: '/photo/thumbnail_image_jpg_p9x8dLWr.jpg',
-                      width: 1024,
-                      height: 641,
-                    },
+              thumbnail: {
+                __typename: 'ImageFace',
+                id: '3',
+                rectangle: {
+                  __typename: 'FaceRectangle',
+                  minX: 0.2705079913139343,
+                  maxX: 0.3408200144767761,
+                  minY: 0.7691109776496887,
+                  maxY: 0.881434977054596,
+                },
+                media: {
+                  __typename: 'Media',
+                  id: '63',
+                  title: 'image.jpg',
+                  thumbnail: {
+                    __typename: 'MediaURL',
+                    url: '/photo/thumbnail_image_jpg_p9x8dLWr.jpg',
+                    width: 1024,
+                    height: 641,
                   },
                 },
-              ],
+              },
             },
             {
               __typename: 'FaceGroup',
               id: '1',
               label: 'Person B',
+              displayLabel: 'Person B',
               imageFaceCount: 1,
-              imageFaces: [],
+              thumbnail: null,
             },
           ],
         },
@@ -104,38 +111,37 @@ describe('FaceDetails component', () => {
   const faceGroup: myFaces_myFaceGroups = {
     id: '3',
     label: null,
+    displayLabel: null,
     imageFaceCount: 2,
-    imageFaces: [
-      {
-        id: '3',
-        rectangle: {
-          minX: 0.2705079913139343,
-          maxX: 0.3408200144767761,
-          minY: 0.7691109776496887,
-          maxY: 0.881434977054596,
-          __typename: 'FaceRectangle',
-        },
-        media: {
-          id: '63',
-          title: 'image.jpg',
-          thumbnail: {
-            url: '/photo/thumbnail_image_jpg_p9x8dLWr.jpg',
-            width: 1024,
-            height: 641,
-            __typename: 'MediaURL',
-          },
-          __typename: 'Media',
-        },
-        __typename: 'ImageFace',
+    thumbnail: {
+      id: '3',
+      rectangle: {
+        minX: 0.2705079913139343,
+        maxX: 0.3408200144767761,
+        minY: 0.7691109776496887,
+        maxY: 0.881434977054596,
+        __typename: 'FaceRectangle',
       },
-    ],
+      media: {
+        id: '63',
+        title: 'image.jpg',
+        thumbnail: {
+          url: '/photo/thumbnail_image_jpg_p9x8dLWr.jpg',
+          width: 1024,
+          height: 641,
+          __typename: 'MediaURL',
+        },
+        __typename: 'Media',
+      },
+      __typename: 'ImageFace',
+    },
     __typename: 'FaceGroup',
   }
 
   test('unlabeled, no images', () => {
     const emptyFaceGroup: myFaces_myFaceGroups = {
       ...faceGroup,
-      imageFaces: [],
+      thumbnail: null,
     }
 
     render(
@@ -154,7 +160,7 @@ describe('FaceDetails component', () => {
   test('labeled, with thumbnail', () => {
     const labeledFaceGroup: myFaces_myFaceGroups = {
       ...faceGroup,
-      label: 'Some label',
+      displayLabel: 'Some label',
     }
 
     render(
@@ -167,7 +173,7 @@ describe('FaceDetails component', () => {
       </MockedProvider>
     )
 
-    expect(screen.getByText(labeledFaceGroup.label!)).toBeInTheDocument()
+    expect(screen.getByText(labeledFaceGroup.displayLabel!)).toBeInTheDocument()
     expect(screen.queryByText('Unlabeled')).not.toBeInTheDocument()
   })
 
@@ -178,7 +184,7 @@ describe('FaceDetails component', () => {
           query: SET_GROUP_LABEL_MUTATION,
           variables: {
             groupID: '3',
-            label: 'John Doe',
+            displayLabel: 'John Doe',
           },
         },
         newData: vi.fn(() => ({
@@ -186,7 +192,7 @@ describe('FaceDetails component', () => {
             setFaceGroupLabel: {
               __typename: 'FaceGroup',
               id: '3',
-              label: 'John Doe',
+              displayLabel: 'John Doe',
             },
           },
         })),

@@ -10,10 +10,13 @@ import (
 
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/scanner/exif"
+	"github.com/photoview/photoview/api/scanner/face_detection"
 	"github.com/photoview/photoview/api/scanner/scanner_task"
+	"github.com/photoview/photoview/api/scanner/scanner_utils"
 )
 
-// RatingTask keeps EXIF data and `media.rating` in sync with the files on disk.
+// RatingTask keeps EXIF data, `media.rating` and, with the faces_exif detector,
+// faces in sync with the files on disk.
 // It must run after ExifTask, which parses EXIF only for newly found media.
 //
 // Fork-specific: not part of upstream Photoview.
@@ -43,7 +46,24 @@ func (t RatingTask) AfterMediaFound(ctx scanner_task.TaskContext, media *models.
 		log.Printf("WARN: Updating rating for %s failed: %s\n", media.Title, err)
 	}
 
+	if err := syncFaces(tx, media); err != nil {
+		scanner_utils.ScannerError(ctx, "Error reading faces from metadata (%s): %s", media.Path, err)
+	}
+
 	return nil
+}
+
+// syncFaces reads the faces of a new or changed photo from its metadata.
+func syncFaces(tx *gorm.DB, media *models.Media) error {
+	if !face_detection.FromMetadata || face_detection.GlobalFaceDetector == nil {
+		return nil
+	}
+
+	if media.Type != models.MediaTypePhoto {
+		return nil
+	}
+
+	return face_detection.GlobalFaceDetector.DetectFaces(tx, media)
 }
 
 func modifiedSince(path string, since time.Time) (bool, error) {

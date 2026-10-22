@@ -156,6 +156,16 @@ func (r *mutationResolver) FavoriteMedia(ctx context.Context, mediaID int, favor
 	return user.FavoriteMedia(r.DB(ctx), mediaID, favorite)
 }
 
+// LikeMedia is the resolver for the likeMedia field.
+func (r *mutationResolver) LikeMedia(ctx context.Context, mediaID int) (*models.Media, error) {
+	user := auth.UserFromContext(ctx)
+	if user == nil {
+		return nil, auth.ErrUnauthorized
+	}
+
+	return actions.LikeMedia(r.DB(ctx), user, mediaID)
+}
+
 // MyMedia is the resolver for the myMedia field.
 func (r *queryResolver) MyMedia(ctx context.Context, order *models.Ordering, paginate *models.Pagination) ([]*models.Media, error) {
 	user := auth.UserFromContext(ctx)

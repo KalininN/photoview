@@ -15,6 +15,10 @@ type FaceDetectionTask struct {
 func (t FaceDetectionTask) AfterProcessMedia(ctx scanner_task.TaskContext, mediaData *media_encoding.EncodeMediaData,
 	updatedURLs []*models.MediaURL, mediaIndex int, mediaTotal int) error {
 
+	if face_detection.FromMetadata {
+		return nil // fork-specific: RatingTask reads faces from metadata
+	}
+
 	didProcess := len(updatedURLs) > 0
 
 	if didProcess && mediaData.Media.Type == models.MediaTypePhoto {

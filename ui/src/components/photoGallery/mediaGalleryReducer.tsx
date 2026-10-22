@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { MediaGalleryFields } from './__generated__/MediaGalleryFields'
+import { act } from 'react-dom/test-utils'
 
 export interface MediaGalleryState {
   presenting: boolean
@@ -17,6 +18,14 @@ export type PhotoGalleryAction =
   | { type: 'openPresentMode'; activeIndex: number }
   | { type: 'selectImage'; index: number }
   | { type: 'replaceMedia'; media: MediaGalleryFields[] }
+
+const arraysEqual = (a: string[], b: string[]) => {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false
+  }
+  return true
+}
 
 export function mediaGalleryReducer(
   state: MediaGalleryState,
@@ -60,11 +69,16 @@ export function mediaGalleryReducer(
         ),
       }
     case 'replaceMedia':
+      const existingMediaList = state.media.map(m => m.id)
+      const updatedMediaList = action.media.map(m => m.id)
+      const mediaChanged = !arraysEqual(existingMediaList, updatedMediaList);
+      const updatedActiveIndex = (mediaChanged ? -1 : state.activeIndex);
+      const updatedPresenting = (mediaChanged ? false : state.presenting);
       return {
         ...state,
         media: action.media,
-        activeIndex: -1,
-        presenting: false,
+        activeIndex: updatedActiveIndex,
+        presenting: updatedPresenting,
       }
   }
 }

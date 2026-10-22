@@ -235,7 +235,7 @@ const MergeFaceGroupsModal = ({
         'Select one or more source faces to merge into:'
       ) +
       ` ${
-        selectedDestinationFaceGroup?.label ??
+        selectedDestinationFaceGroup?.displayLabel ??
         t('people_page.face_group.unlabeled', 'Unlabeled') ??
         'Unlabeled'
       }`,

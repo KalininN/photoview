@@ -136,12 +136,12 @@ const AlbumFilter = ({
     <div className="flex items-end gap-4 flex-wrap mb-4">
       <SortingOptions ordering={ordering} setOrdering={setOrdering} />
       <RatingDropdown minRating={minRating} setMinRating={setMinRating} />
-      {authToken() && setOnlyFavorites && (
+      {/* {authToken() && setOnlyFavorites && (
         <FavoritesCheckbox
           onlyFavorites={onlyFavorites}
           setOnlyFavorites={setOnlyFavorites}
         />
-      )}
+      )} */}
     </div>
   )
 }

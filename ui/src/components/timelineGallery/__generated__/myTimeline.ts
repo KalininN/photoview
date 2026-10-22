@@ -78,6 +78,10 @@ export interface myTimeline_myTimeline {
   videoWeb: myTimeline_myTimeline_videoWeb | null;
   favorite: boolean;
   /**
+   * Number of likes
+   */
+  likes: number | null;
+  /**
    * The album that holds the media
    */
   album: myTimeline_myTimeline_album;

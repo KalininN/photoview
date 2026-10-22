@@ -5,8 +5,8 @@ import {
   ProtectedImageProps,
 } from '../../components/photoGallery/ProtectedMedia'
 import {
-  myFaces_myFaceGroups_imageFaces_media,
-  myFaces_myFaceGroups_imageFaces_rectangle,
+  myFaces_myFaceGroups_thumbnail_media,
+  myFaces_myFaceGroups_thumbnail_rectangle,
 } from './__generated__/myFaces'
 
 type FaceImageProps = ProtectedImageProps & {
@@ -81,8 +81,8 @@ const CircleImageWrapper = styled.div<{ size: string }>`
 type FaceCircleImageFace = {
   __typename: 'ImageFace'
   id: string
-  rectangle: myFaces_myFaceGroups_imageFaces_rectangle
-  media: myFaces_myFaceGroups_imageFaces_media
+  rectangle: myFaces_myFaceGroups_thumbnail_rectangle
+  media: myFaces_myFaceGroups_thumbnail_media
 }
 
 type FaceCircleImageProps = {
@@ -91,7 +91,7 @@ type FaceCircleImageProps = {
   size?: string
 }
 
-const FaceCircleImage = ({
+export const FaceCircleImage = ({
   imageFace,
   selectable,
   size = '150px',
