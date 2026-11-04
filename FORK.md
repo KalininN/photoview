@@ -110,6 +110,16 @@ this is worth sending upstream. (The scanner side of this fix is upstream as
 `build_and_push.sh` regenerates the GraphQL code, builds the Docker image and pushes it as
 `kalininn/photoview:latest`.
 
+### Fixes sent upstream, merged here early
+
+The app doesn't work without these, so they are merged ahead of upstream. Once upstream merges
+them, the next sync brings in the same commits without conflicts; drop this section then.
+
+- [#1535](https://github.com/photoview/photoview/pull/1535) (`fix/dev-api-endpoints-coverage`): API
+  endpoint in the development env files, GraphQL playground links, album download URL with `urlJoin`
+- [#1536](https://github.com/photoview/photoview/pull/1536) (`fix/sidebar-download-links`): single
+  media download with an absolute API endpoint
+
 ## Syncing with upstream
 
 ```bash
