@@ -32,6 +32,8 @@ type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 type ResolverRoot interface {
 	Album() AlbumResolver
 	FaceGroup() FaceGroupResolver
+	GuessGame() GuessGameResolver
+	GuessRound() GuessRoundResolver
 	ImageFace() ImageFaceResolver
 	Media() MediaResolver
 	Mutation() MutationResolver
@@ -86,6 +88,46 @@ type ComplexityRoot struct {
 		MaxY func(childComplexity int) int
 		MinX func(childComplexity int) int
 		MinY func(childComplexity int) int
+	}
+
+	GuessGame struct {
+		Abandoned  func(childComplexity int) int
+		CreatedAt  func(childComplexity int) int
+		Difficulty func(childComplexity int) int
+		FinishedAt func(childComplexity int) int
+		MaxScore   func(childComplexity int) int
+		PublicID   func(childComplexity int) int
+		Rounds     func(childComplexity int) int
+		TotalScore func(childComplexity int) int
+	}
+
+	GuessGameInfo struct {
+		EligibleCount func(childComplexity int) int
+		MaxYear       func(childComplexity int) int
+		MinYear       func(childComplexity int) int
+		NorthEast     func(childComplexity int) int
+		SouthWest     func(childComplexity int) int
+	}
+
+	GuessRound struct {
+		Photo      func(childComplexity int) int
+		PublicID   func(childComplexity int) int
+		Result     func(childComplexity int) int
+		RoundIndex func(childComplexity int) int
+	}
+
+	GuessRoundResult struct {
+		Answer        func(childComplexity int) int
+		AnswerMonth   func(childComplexity int) int
+		AnswerYear    func(childComplexity int) int
+		DistanceKm    func(childComplexity int) int
+		Guess         func(childComplexity int) int
+		GuessMonth    func(childComplexity int) int
+		GuessYear     func(childComplexity int) int
+		LocationScore func(childComplexity int) int
+		MonthsOff     func(childComplexity int) int
+		Score         func(childComplexity int) int
+		TimeScore     func(childComplexity int) int
 	}
 
 	ImageFace struct {
@@ -174,6 +216,8 @@ type ComplexityRoot struct {
 		SetShareTokenLabel          func(childComplexity int, token string, label *string) int
 		ShareAlbum                  func(childComplexity int, albumID int, expire *time.Time, password *string, label *string) int
 		ShareMedia                  func(childComplexity int, mediaID int, expire *time.Time, password *string, label *string) int
+		StartGuessGame              func(childComplexity int, deviceKey string, rounds *int, difficulty *models.GuessDifficulty, filter *models.GuessGameFilter, replaceGameID *string) int
+		SubmitGuess                 func(childComplexity int, roundID string, guess models.GuessInput) int
 		UpdateUser                  func(childComplexity int, id int, username *string, password *string, admin *bool) int
 		UserAddRootPath             func(childComplexity int, id int, rootPath string) int
 		UserRemoveRootAlbum         func(childComplexity int, userID int, albumID int) int
@@ -193,6 +237,8 @@ type ComplexityRoot struct {
 	Query struct {
 		Album                      func(childComplexity int, id int, tokenCredentials *models.ShareTokenCredentials) int
 		FaceGroup                  func(childComplexity int, id int) int
+		GuessGame                  func(childComplexity int, id string) int
+		GuessGameInfo              func(childComplexity int, filter *models.GuessGameFilter) int
 		MapboxToken                func(childComplexity int) int
 		Media                      func(childComplexity int, id int, tokenCredentials *models.ShareTokenCredentials) int
 		MediaList                  func(childComplexity int, ids []int) int
@@ -237,6 +283,7 @@ type ComplexityRoot struct {
 	SiteInfo struct {
 		ConcurrentWorkers    func(childComplexity int) int
 		FaceDetectionEnabled func(childComplexity int) int
+		GuesserEnabled       func(childComplexity int) int
 		InitialSetup         func(childComplexity int) int
 		PeriodicScanInterval func(childComplexity int) int
 	}
@@ -298,6 +345,13 @@ type FaceGroupResolver interface {
 	ImageFaces(ctx context.Context, obj *models.FaceGroup, minRating *int, paginate *models.Pagination) ([]*models.ImageFace, error)
 	ImageFaceCount(ctx context.Context, obj *models.FaceGroup) (int, error)
 }
+type GuessGameResolver interface {
+	Difficulty(ctx context.Context, obj *models.GuessGame) (models.GuessDifficulty, error)
+	Rounds(ctx context.Context, obj *models.GuessGame) ([]*models.GuessRound, error)
+}
+type GuessRoundResolver interface {
+	Photo(ctx context.Context, obj *models.GuessRound) (*models.Media, error)
+}
 type ImageFaceResolver interface {
 	Media(ctx context.Context, obj *models.ImageFace) (*models.Media, error)
 
@@ -328,6 +382,8 @@ type MutationResolver interface {
 	MoveImageFaces(ctx context.Context, imageFaceIDs []int, destinationFaceGroupID int) (*models.FaceGroup, error)
 	RecognizeUnlabeledFaces(ctx context.Context) ([]*models.ImageFace, error)
 	DetachImageFaces(ctx context.Context, imageFaceIDs []int) (*models.FaceGroup, error)
+	StartGuessGame(ctx context.Context, deviceKey string, rounds *int, difficulty *models.GuessDifficulty, filter *models.GuessGameFilter, replaceGameID *string) (*models.GuessGame, error)
+	SubmitGuess(ctx context.Context, roundID string, guess models.GuessInput) (*models.GuessRoundResult, error)
 	FavoriteMedia(ctx context.Context, mediaID int, favorite bool) (*models.Media, error)
 	LikeMedia(ctx context.Context, mediaID int) (*models.Media, error)
 	ScanAll(ctx context.Context) (*models.ScannerResult, error)
@@ -354,6 +410,8 @@ type QueryResolver interface {
 	Album(ctx context.Context, id int, tokenCredentials *models.ShareTokenCredentials) (*models.Album, error)
 	MyFaceGroups(ctx context.Context, paginate *models.Pagination) ([]*models.FaceGroup, error)
 	FaceGroup(ctx context.Context, id int) (*models.FaceGroup, error)
+	GuessGameInfo(ctx context.Context, filter *models.GuessGameFilter) (*models.GuessGameInfo, error)
+	GuessGame(ctx context.Context, id string) (*models.GuessGame, error)
 	MyMedia(ctx context.Context, order *models.Ordering, paginate *models.Pagination) ([]*models.Media, error)
 	Media(ctx context.Context, id int, tokenCredentials *models.ShareTokenCredentials) (*models.Media, error)
 	MediaList(ctx context.Context, ids []int) ([]*models.Media, error)
@@ -375,6 +433,8 @@ type ShareTokenResolver interface {
 }
 type SiteInfoResolver interface {
 	FaceDetectionEnabled(ctx context.Context, obj *models.SiteInfo) (bool, error)
+
+	GuesserEnabled(ctx context.Context, obj *models.SiteInfo) (bool, error)
 }
 type SubscriptionResolver interface {
 	Notification(ctx context.Context) (<-chan *models.Notification, error)
@@ -571,6 +631,178 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FaceRectangle.MinY(childComplexity), true
+
+	case "GuessGame.abandoned":
+		if e.ComplexityRoot.GuessGame.Abandoned == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGame.Abandoned(childComplexity), true
+	case "GuessGame.createdAt":
+		if e.ComplexityRoot.GuessGame.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGame.CreatedAt(childComplexity), true
+	case "GuessGame.difficulty":
+		if e.ComplexityRoot.GuessGame.Difficulty == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGame.Difficulty(childComplexity), true
+	case "GuessGame.finishedAt":
+		if e.ComplexityRoot.GuessGame.FinishedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGame.FinishedAt(childComplexity), true
+	case "GuessGame.maxScore":
+		if e.ComplexityRoot.GuessGame.MaxScore == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGame.MaxScore(childComplexity), true
+	case "GuessGame.id":
+		if e.ComplexityRoot.GuessGame.PublicID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGame.PublicID(childComplexity), true
+	case "GuessGame.rounds":
+		if e.ComplexityRoot.GuessGame.Rounds == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGame.Rounds(childComplexity), true
+	case "GuessGame.totalScore":
+		if e.ComplexityRoot.GuessGame.TotalScore == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGame.TotalScore(childComplexity), true
+
+	case "GuessGameInfo.eligibleCount":
+		if e.ComplexityRoot.GuessGameInfo.EligibleCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGameInfo.EligibleCount(childComplexity), true
+	case "GuessGameInfo.maxYear":
+		if e.ComplexityRoot.GuessGameInfo.MaxYear == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGameInfo.MaxYear(childComplexity), true
+	case "GuessGameInfo.minYear":
+		if e.ComplexityRoot.GuessGameInfo.MinYear == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGameInfo.MinYear(childComplexity), true
+	case "GuessGameInfo.northEast":
+		if e.ComplexityRoot.GuessGameInfo.NorthEast == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGameInfo.NorthEast(childComplexity), true
+	case "GuessGameInfo.southWest":
+		if e.ComplexityRoot.GuessGameInfo.SouthWest == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessGameInfo.SouthWest(childComplexity), true
+
+	case "GuessRound.photo":
+		if e.ComplexityRoot.GuessRound.Photo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRound.Photo(childComplexity), true
+	case "GuessRound.id":
+		if e.ComplexityRoot.GuessRound.PublicID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRound.PublicID(childComplexity), true
+	case "GuessRound.result":
+		if e.ComplexityRoot.GuessRound.Result == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRound.Result(childComplexity), true
+	case "GuessRound.index":
+		if e.ComplexityRoot.GuessRound.RoundIndex == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRound.RoundIndex(childComplexity), true
+
+	case "GuessRoundResult.answer":
+		if e.ComplexityRoot.GuessRoundResult.Answer == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.Answer(childComplexity), true
+	case "GuessRoundResult.answerMonth":
+		if e.ComplexityRoot.GuessRoundResult.AnswerMonth == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.AnswerMonth(childComplexity), true
+	case "GuessRoundResult.answerYear":
+		if e.ComplexityRoot.GuessRoundResult.AnswerYear == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.AnswerYear(childComplexity), true
+	case "GuessRoundResult.distanceKm":
+		if e.ComplexityRoot.GuessRoundResult.DistanceKm == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.DistanceKm(childComplexity), true
+	case "GuessRoundResult.guess":
+		if e.ComplexityRoot.GuessRoundResult.Guess == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.Guess(childComplexity), true
+	case "GuessRoundResult.guessMonth":
+		if e.ComplexityRoot.GuessRoundResult.GuessMonth == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.GuessMonth(childComplexity), true
+	case "GuessRoundResult.guessYear":
+		if e.ComplexityRoot.GuessRoundResult.GuessYear == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.GuessYear(childComplexity), true
+	case "GuessRoundResult.locationScore":
+		if e.ComplexityRoot.GuessRoundResult.LocationScore == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.LocationScore(childComplexity), true
+	case "GuessRoundResult.monthsOff":
+		if e.ComplexityRoot.GuessRoundResult.MonthsOff == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.MonthsOff(childComplexity), true
+	case "GuessRoundResult.score":
+		if e.ComplexityRoot.GuessRoundResult.Score == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.Score(childComplexity), true
+	case "GuessRoundResult.timeScore":
+		if e.ComplexityRoot.GuessRoundResult.TimeScore == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GuessRoundResult.TimeScore(childComplexity), true
 
 	case "ImageFace.faceGroup":
 		if e.ComplexityRoot.ImageFace.FaceGroup == nil {
@@ -1122,6 +1354,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ShareMedia(childComplexity, args["mediaId"].(int), args["expire"].(*time.Time), args["password"].(*string), args["label"].(*string)), true
+	case "Mutation.startGuessGame":
+		if e.ComplexityRoot.Mutation.StartGuessGame == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_startGuessGame_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.StartGuessGame(childComplexity, args["deviceKey"].(string), args["rounds"].(*int), args["difficulty"].(*models.GuessDifficulty), args["filter"].(*models.GuessGameFilter), args["replaceGameId"].(*string)), true
+	case "Mutation.submitGuess":
+		if e.ComplexityRoot.Mutation.SubmitGuess == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_submitGuess_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SubmitGuess(childComplexity, args["roundId"].(string), args["guess"].(models.GuessInput)), true
 	case "Mutation.updateUser":
 		if e.ComplexityRoot.Mutation.UpdateUser == nil {
 			break
@@ -1227,6 +1481,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.FaceGroup(childComplexity, args["id"].(int)), true
+	case "Query.guessGame":
+		if e.ComplexityRoot.Query.GuessGame == nil {
+			break
+		}
+
+		args, err := ec.field_Query_guessGame_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.GuessGame(childComplexity, args["id"].(string)), true
+	case "Query.guessGameInfo":
+		if e.ComplexityRoot.Query.GuessGameInfo == nil {
+			break
+		}
+
+		args, err := ec.field_Query_guessGameInfo_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.GuessGameInfo(childComplexity, args["filter"].(*models.GuessGameFilter)), true
 
 	case "Query.mapboxToken":
 		if e.ComplexityRoot.Query.MapboxToken == nil {
@@ -1474,6 +1750,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SiteInfo.FaceDetectionEnabled(childComplexity), true
+	case "SiteInfo.guesserEnabled":
+		if e.ComplexityRoot.SiteInfo.GuesserEnabled == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SiteInfo.GuesserEnabled(childComplexity), true
 	case "SiteInfo.initialSetup":
 		if e.ComplexityRoot.SiteInfo.InitialSetup == nil {
 			break
@@ -1632,6 +1914,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputGuessGameFilter,
+		ec.unmarshalInputGuessInput,
 		ec.unmarshalInputOrdering,
 		ec.unmarshalInputPagination,
 		ec.unmarshalInputShareTokenCredentials,
@@ -1726,7 +2010,7 @@ func newExecutionContext(
 	}
 }
 
-//go:embed "resolvers/album.graphql" "resolvers/faces.graphql" "resolvers/media.graphql" "resolvers/media_geo_json.graphql" "resolvers/notification.graphql" "resolvers/root.graphql" "resolvers/scanner.graphql" "resolvers/search.graphql" "resolvers/share_token.graphql" "resolvers/site_info.graphql" "resolvers/timeline.graphql" "resolvers/user.graphql"
+//go:embed "resolvers/album.graphql" "resolvers/faces.graphql" "resolvers/guess_game.graphql" "resolvers/media.graphql" "resolvers/media_geo_json.graphql" "resolvers/notification.graphql" "resolvers/root.graphql" "resolvers/scanner.graphql" "resolvers/search.graphql" "resolvers/share_token.graphql" "resolvers/site_info.graphql" "resolvers/timeline.graphql" "resolvers/user.graphql"
 var sourcesFS embed.FS
 
 func sourceData(filename string) string {
@@ -1740,6 +2024,7 @@ func sourceData(filename string) string {
 var sources = []*ast.Source{
 	{Name: "resolvers/album.graphql", Input: sourceData("resolvers/album.graphql"), BuiltIn: false},
 	{Name: "resolvers/faces.graphql", Input: sourceData("resolvers/faces.graphql"), BuiltIn: false},
+	{Name: "resolvers/guess_game.graphql", Input: sourceData("resolvers/guess_game.graphql"), BuiltIn: false},
 	{Name: "resolvers/media.graphql", Input: sourceData("resolvers/media.graphql"), BuiltIn: false},
 	{Name: "resolvers/media_geo_json.graphql", Input: sourceData("resolvers/media_geo_json.graphql"), BuiltIn: false},
 	{Name: "resolvers/notification.graphql", Input: sourceData("resolvers/notification.graphql"), BuiltIn: false},
@@ -1835,6 +2120,86 @@ func (ec *executionContext) childFields_FaceRectangle(ctx context.Context, field
 		return ec.fieldContext_FaceRectangle_maxY(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type FaceRectangle", field.Name)
+}
+
+func (ec *executionContext) childFields_GuessGame(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_GuessGame_id(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_GuessGame_createdAt(ctx, field)
+	case "finishedAt":
+		return ec.fieldContext_GuessGame_finishedAt(ctx, field)
+	case "abandoned":
+		return ec.fieldContext_GuessGame_abandoned(ctx, field)
+	case "difficulty":
+		return ec.fieldContext_GuessGame_difficulty(ctx, field)
+	case "rounds":
+		return ec.fieldContext_GuessGame_rounds(ctx, field)
+	case "totalScore":
+		return ec.fieldContext_GuessGame_totalScore(ctx, field)
+	case "maxScore":
+		return ec.fieldContext_GuessGame_maxScore(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type GuessGame", field.Name)
+}
+
+func (ec *executionContext) childFields_GuessGameInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "eligibleCount":
+		return ec.fieldContext_GuessGameInfo_eligibleCount(ctx, field)
+	case "minYear":
+		return ec.fieldContext_GuessGameInfo_minYear(ctx, field)
+	case "maxYear":
+		return ec.fieldContext_GuessGameInfo_maxYear(ctx, field)
+	case "southWest":
+		return ec.fieldContext_GuessGameInfo_southWest(ctx, field)
+	case "northEast":
+		return ec.fieldContext_GuessGameInfo_northEast(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type GuessGameInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_GuessRound(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_GuessRound_id(ctx, field)
+	case "index":
+		return ec.fieldContext_GuessRound_index(ctx, field)
+	case "photo":
+		return ec.fieldContext_GuessRound_photo(ctx, field)
+	case "result":
+		return ec.fieldContext_GuessRound_result(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type GuessRound", field.Name)
+}
+
+func (ec *executionContext) childFields_GuessRoundResult(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "guess":
+		return ec.fieldContext_GuessRoundResult_guess(ctx, field)
+	case "guessYear":
+		return ec.fieldContext_GuessRoundResult_guessYear(ctx, field)
+	case "guessMonth":
+		return ec.fieldContext_GuessRoundResult_guessMonth(ctx, field)
+	case "answer":
+		return ec.fieldContext_GuessRoundResult_answer(ctx, field)
+	case "answerYear":
+		return ec.fieldContext_GuessRoundResult_answerYear(ctx, field)
+	case "answerMonth":
+		return ec.fieldContext_GuessRoundResult_answerMonth(ctx, field)
+	case "distanceKm":
+		return ec.fieldContext_GuessRoundResult_distanceKm(ctx, field)
+	case "monthsOff":
+		return ec.fieldContext_GuessRoundResult_monthsOff(ctx, field)
+	case "locationScore":
+		return ec.fieldContext_GuessRoundResult_locationScore(ctx, field)
+	case "timeScore":
+		return ec.fieldContext_GuessRoundResult_timeScore(ctx, field)
+	case "score":
+		return ec.fieldContext_GuessRoundResult_score(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type GuessRoundResult", field.Name)
 }
 
 func (ec *executionContext) childFields_ImageFace(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -2033,6 +2398,8 @@ func (ec *executionContext) childFields_SiteInfo(ctx context.Context, field grap
 		return ec.fieldContext_SiteInfo_periodicScanInterval(ctx, field)
 	case "concurrentWorkers":
 		return ec.fieldContext_SiteInfo_concurrentWorkers(ctx, field)
+	case "guesserEnabled":
+		return ec.fieldContext_SiteInfo_guesserEnabled(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type SiteInfo", field.Name)
 }
@@ -2805,6 +3172,74 @@ func (ec *executionContext) field_Mutation_shareMedia_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_startGuessGame_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "deviceKey",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["deviceKey"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "rounds",
+		func(ctx context.Context, v any) (*int, error) {
+			return ec.unmarshalOInt2ᚖint(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["rounds"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "difficulty",
+		func(ctx context.Context, v any) (*models.GuessDifficulty, error) {
+			return ec.unmarshalOGuessDifficulty2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessDifficulty(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["difficulty"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "filter",
+		func(ctx context.Context, v any) (*models.GuessGameFilter, error) {
+			return ec.unmarshalOGuessGameFilter2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessGameFilter(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "replaceGameId",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["replaceGameId"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_submitGuess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "roundId",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["roundId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "guess",
+		func(ctx context.Context, v any) (models.GuessInput, error) {
+			return ec.unmarshalNGuessInput2githubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["guess"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2929,6 +3364,34 @@ func (ec *executionContext) field_Query_faceGroup_args(ctx context.Context, rawA
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id",
 		func(ctx context.Context, v any) (int, error) {
 			return ec.unmarshalNID2int(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_guessGameInfo_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter",
+		func(ctx context.Context, v any) (*models.GuessGameFilter, error) {
+			return ec.unmarshalOGuessGameFilter2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessGameFilter(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_guessGame_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
 		})
 	if err != nil {
 		return nil, err
@@ -3923,6 +4386,713 @@ func (ec *executionContext) _FaceRectangle_maxY(ctx context.Context, field graph
 }
 func (ec *executionContext) fieldContext_FaceRectangle_maxY(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("FaceRectangle", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGame_id(ctx context.Context, field graphql.CollectedField, obj *models.GuessGame) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGame_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PublicID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGame_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessGame", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGame_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.GuessGame) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGame_createdAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGame_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessGame", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGame_finishedAt(ctx context.Context, field graphql.CollectedField, obj *models.GuessGame) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGame_finishedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.FinishedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGame_finishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessGame", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGame_abandoned(ctx context.Context, field graphql.CollectedField, obj *models.GuessGame) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGame_abandoned(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Abandoned, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGame_abandoned(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessGame", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGame_difficulty(ctx context.Context, field graphql.CollectedField, obj *models.GuessGame) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGame_difficulty(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.GuessGame().Difficulty(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v models.GuessDifficulty) graphql.Marshaler {
+			return ec.marshalNGuessDifficulty2githubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessDifficulty(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGame_difficulty(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessGame", field, true, true, errors.New("field of type GuessDifficulty does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGame_rounds(ctx context.Context, field graphql.CollectedField, obj *models.GuessGame) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGame_rounds(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.GuessGame().Rounds(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*models.GuessRound) graphql.Marshaler {
+			return ec.marshalNGuessRound2ᚕᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessRoundᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGame_rounds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GuessGame",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GuessRound(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GuessGame_totalScore(ctx context.Context, field graphql.CollectedField, obj *models.GuessGame) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGame_totalScore(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TotalScore, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGame_totalScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessGame", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGame_maxScore(ctx context.Context, field graphql.CollectedField, obj *models.GuessGame) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGame_maxScore(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.MaxScore(), nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGame_maxScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessGame", field, true, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGameInfo_eligibleCount(ctx context.Context, field graphql.CollectedField, obj *models.GuessGameInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGameInfo_eligibleCount(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.EligibleCount, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGameInfo_eligibleCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessGameInfo", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGameInfo_minYear(ctx context.Context, field graphql.CollectedField, obj *models.GuessGameInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGameInfo_minYear(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.MinYear, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *int) graphql.Marshaler {
+			return ec.marshalOInt2ᚖint(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGameInfo_minYear(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessGameInfo", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGameInfo_maxYear(ctx context.Context, field graphql.CollectedField, obj *models.GuessGameInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGameInfo_maxYear(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.MaxYear, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *int) graphql.Marshaler {
+			return ec.marshalOInt2ᚖint(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGameInfo_maxYear(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessGameInfo", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessGameInfo_southWest(ctx context.Context, field graphql.CollectedField, obj *models.GuessGameInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGameInfo_southWest(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SouthWest, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *models.Coordinates) graphql.Marshaler {
+			return ec.marshalOCoordinates2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐCoordinates(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGameInfo_southWest(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GuessGameInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Coordinates(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GuessGameInfo_northEast(ctx context.Context, field graphql.CollectedField, obj *models.GuessGameInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessGameInfo_northEast(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.NorthEast, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *models.Coordinates) graphql.Marshaler {
+			return ec.marshalOCoordinates2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐCoordinates(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GuessGameInfo_northEast(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GuessGameInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Coordinates(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GuessRound_id(ctx context.Context, field graphql.CollectedField, obj *models.GuessRound) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRound_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PublicID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRound_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRound", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _GuessRound_index(ctx context.Context, field graphql.CollectedField, obj *models.GuessRound) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRound_index(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RoundIndex, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRound_index(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRound", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessRound_photo(ctx context.Context, field graphql.CollectedField, obj *models.GuessRound) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRound_photo(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.GuessRound().Photo(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *models.Media) graphql.Marshaler {
+			return ec.marshalOMedia2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐMedia(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRound_photo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GuessRound",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Media(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GuessRound_result(ctx context.Context, field graphql.CollectedField, obj *models.GuessRound) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRound_result(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Result(), nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *models.GuessRoundResult) graphql.Marshaler {
+			return ec.marshalOGuessRoundResult2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessRoundResult(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRound_result(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GuessRound",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GuessRoundResult(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GuessRoundResult_guess(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_guess(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Guess, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *models.Coordinates) graphql.Marshaler {
+			return ec.marshalNCoordinates2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐCoordinates(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_guess(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GuessRoundResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Coordinates(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GuessRoundResult_guessYear(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_guessYear(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.GuessYear, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_guessYear(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRoundResult", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessRoundResult_guessMonth(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_guessMonth(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.GuessMonth, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_guessMonth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRoundResult", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessRoundResult_answer(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_answer(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Answer, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *models.Coordinates) graphql.Marshaler {
+			return ec.marshalNCoordinates2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐCoordinates(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_answer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GuessRoundResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Coordinates(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GuessRoundResult_answerYear(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_answerYear(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AnswerYear, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_answerYear(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRoundResult", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessRoundResult_answerMonth(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_answerMonth(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AnswerMonth, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_answerMonth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRoundResult", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessRoundResult_distanceKm(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_distanceKm(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DistanceKm, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v float64) graphql.Marshaler {
+			return ec.marshalNFloat2float64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_distanceKm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRoundResult", field, false, false, errors.New("field of type Float does not have child fields"))
+}
+
+func (ec *executionContext) _GuessRoundResult_monthsOff(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_monthsOff(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.MonthsOff, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_monthsOff(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRoundResult", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessRoundResult_locationScore(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_locationScore(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LocationScore, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_locationScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRoundResult", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessRoundResult_timeScore(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_timeScore(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TimeScore, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_timeScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRoundResult", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _GuessRoundResult_score(ctx context.Context, field graphql.CollectedField, obj *models.GuessRoundResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GuessRoundResult_score(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Score, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GuessRoundResult_score(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GuessRoundResult", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
 func (ec *executionContext) _ImageFace_id(ctx context.Context, field graphql.CollectedField, obj *models.ImageFace) (ret graphql.Marshaler) {
@@ -5607,6 +6777,120 @@ func (ec *executionContext) fieldContext_Mutation_detachImageFaces(ctx context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_startGuessGame(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_startGuessGame(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().StartGuessGame(ctx, fc.Args["deviceKey"].(string), fc.Args["rounds"].(*int), fc.Args["difficulty"].(*models.GuessDifficulty), fc.Args["filter"].(*models.GuessGameFilter), fc.Args["replaceGameId"].(*string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.Directives.IsAuthorized == nil {
+					var zeroVal *models.GuessGame
+					return zeroVal, errors.New("directive isAuthorized is not implemented")
+				}
+				return ec.Directives.IsAuthorized(ctx, nil, directive0)
+			}
+
+			next = directive1
+			return next
+		},
+		func(ctx context.Context, selections ast.SelectionSet, v *models.GuessGame) graphql.Marshaler {
+			return ec.marshalNGuessGame2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessGame(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_startGuessGame(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GuessGame(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_startGuessGame_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_submitGuess(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_submitGuess(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SubmitGuess(ctx, fc.Args["roundId"].(string), fc.Args["guess"].(models.GuessInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.Directives.IsAuthorized == nil {
+					var zeroVal *models.GuessRoundResult
+					return zeroVal, errors.New("directive isAuthorized is not implemented")
+				}
+				return ec.Directives.IsAuthorized(ctx, nil, directive0)
+			}
+
+			next = directive1
+			return next
+		},
+		func(ctx context.Context, selections ast.SelectionSet, v *models.GuessRoundResult) graphql.Marshaler {
+			return ec.marshalNGuessRoundResult2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessRoundResult(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_submitGuess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GuessRoundResult(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_submitGuess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_favoriteMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7108,6 +8392,120 @@ func (ec *executionContext) fieldContext_Query_faceGroup(ctx context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_guessGameInfo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_guessGameInfo(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().GuessGameInfo(ctx, fc.Args["filter"].(*models.GuessGameFilter))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.Directives.IsAuthorized == nil {
+					var zeroVal *models.GuessGameInfo
+					return zeroVal, errors.New("directive isAuthorized is not implemented")
+				}
+				return ec.Directives.IsAuthorized(ctx, nil, directive0)
+			}
+
+			next = directive1
+			return next
+		},
+		func(ctx context.Context, selections ast.SelectionSet, v *models.GuessGameInfo) graphql.Marshaler {
+			return ec.marshalNGuessGameInfo2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessGameInfo(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_guessGameInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GuessGameInfo(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_guessGameInfo_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_guessGame(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_guessGame(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().GuessGame(ctx, fc.Args["id"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.Directives.IsAuthorized == nil {
+					var zeroVal *models.GuessGame
+					return zeroVal, errors.New("directive isAuthorized is not implemented")
+				}
+				return ec.Directives.IsAuthorized(ctx, nil, directive0)
+			}
+
+			next = directive1
+			return next
+		},
+		func(ctx context.Context, selections ast.SelectionSet, v *models.GuessGame) graphql.Marshaler {
+			return ec.marshalNGuessGame2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessGame(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_guessGame(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GuessGame(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_guessGame_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_myMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8262,6 +9660,29 @@ func (ec *executionContext) _SiteInfo_concurrentWorkers(ctx context.Context, fie
 }
 func (ec *executionContext) fieldContext_SiteInfo_concurrentWorkers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("SiteInfo", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _SiteInfo_guesserEnabled(ctx context.Context, field graphql.CollectedField, obj *models.SiteInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SiteInfo_guesserEnabled(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.SiteInfo().GuesserEnabled(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SiteInfo_guesserEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SiteInfo", field, true, true, errors.New("field of type Boolean does not have child fields"))
 }
 
 func (ec *executionContext) _Subscription_notification(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
@@ -9909,6 +11330,94 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputGuessGameFilter(ctx context.Context, obj any) (models.GuessGameFilter, error) {
+	var it models.GuessGameFilter
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"minRating", "albumIds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "minRating":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minRating"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MinRating = data
+		case "albumIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("albumIds"))
+			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AlbumIds = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputGuessInput(ctx context.Context, obj any) (models.GuessInput, error) {
+	var it models.GuessInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"latitude", "longitude", "year", "month"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "latitude":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("latitude"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Latitude = data
+		case "longitude":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("longitude"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Longitude = data
+		case "year":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("year"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Year = data
+		case "month":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("month"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Month = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputOrdering(ctx context.Context, obj any) (models.Ordering, error) {
 	var it models.Ordering
 	if obj == nil {
@@ -10591,6 +12100,377 @@ func (ec *executionContext) _FaceRectangle(ctx context.Context, sel ast.Selectio
 			}
 		case "maxY":
 			out.Values[i] = ec._FaceRectangle_maxY(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var guessGameImplementors = []string{"GuessGame"}
+
+func (ec *executionContext) _GuessGame(ctx context.Context, sel ast.SelectionSet, obj *models.GuessGame) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, guessGameImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GuessGame")
+		case "id":
+			out.Values[i] = ec._GuessGame_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._GuessGame_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "finishedAt":
+			out.Values[i] = ec._GuessGame_finishedAt(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "abandoned":
+			out.Values[i] = ec._GuessGame_abandoned(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "difficulty":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GuessGame_difficulty(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "rounds":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GuessGame_rounds(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "totalScore":
+			out.Values[i] = ec._GuessGame_totalScore(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "maxScore":
+			out.Values[i] = ec._GuessGame_maxScore(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var guessGameInfoImplementors = []string{"GuessGameInfo"}
+
+func (ec *executionContext) _GuessGameInfo(ctx context.Context, sel ast.SelectionSet, obj *models.GuessGameInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, guessGameInfoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GuessGameInfo")
+		case "eligibleCount":
+			out.Values[i] = ec._GuessGameInfo_eligibleCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "minYear":
+			out.Values[i] = ec._GuessGameInfo_minYear(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "maxYear":
+			out.Values[i] = ec._GuessGameInfo_maxYear(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "southWest":
+			out.Values[i] = ec._GuessGameInfo_southWest(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "northEast":
+			out.Values[i] = ec._GuessGameInfo_northEast(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var guessRoundImplementors = []string{"GuessRound"}
+
+func (ec *executionContext) _GuessRound(ctx context.Context, sel ast.SelectionSet, obj *models.GuessRound) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, guessRoundImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GuessRound")
+		case "id":
+			out.Values[i] = ec._GuessRound_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "index":
+			out.Values[i] = ec._GuessRound_index(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "photo":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GuessRound_photo(ctx, field, obj)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "result":
+			out.Values[i] = ec._GuessRound_result(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var guessRoundResultImplementors = []string{"GuessRoundResult"}
+
+func (ec *executionContext) _GuessRoundResult(ctx context.Context, sel ast.SelectionSet, obj *models.GuessRoundResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, guessRoundResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GuessRoundResult")
+		case "guess":
+			out.Values[i] = ec._GuessRoundResult_guess(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "guessYear":
+			out.Values[i] = ec._GuessRoundResult_guessYear(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "guessMonth":
+			out.Values[i] = ec._GuessRoundResult_guessMonth(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "answer":
+			out.Values[i] = ec._GuessRoundResult_answer(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "answerYear":
+			out.Values[i] = ec._GuessRoundResult_answerYear(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "answerMonth":
+			out.Values[i] = ec._GuessRoundResult_answerMonth(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "distanceKm":
+			out.Values[i] = ec._GuessRoundResult_distanceKm(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "monthsOff":
+			out.Values[i] = ec._GuessRoundResult_monthsOff(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "locationScore":
+			out.Values[i] = ec._GuessRoundResult_locationScore(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "timeScore":
+			out.Values[i] = ec._GuessRoundResult_timeScore(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "score":
+			out.Values[i] = ec._GuessRoundResult_score(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -11481,6 +13361,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "startGuessGame":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_startGuessGame(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "submitGuess":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_submitGuess(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "favoriteMedia":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_favoriteMedia(ctx, field)
@@ -11811,6 +13705,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_faceGroup(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "guessGameInfo":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_guessGameInfo(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "guessGame":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_guessGame(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -12449,6 +14387,44 @@ func (ec *executionContext) _SiteInfo(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "guesserEnabled":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SiteInfo_guesserEnabled(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -13259,6 +15235,16 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCoordinates2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐCoordinates(ctx context.Context, sel ast.SelectionSet, v *models.Coordinates) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Coordinates(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNFaceGroup2ᚕᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐFaceGroupᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.FaceGroup) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -13303,6 +15289,77 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 		}
 	}
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalNGuessDifficulty2githubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessDifficulty(ctx context.Context, v any) (models.GuessDifficulty, error) {
+	var res models.GuessDifficulty
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNGuessDifficulty2githubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessDifficulty(ctx context.Context, sel ast.SelectionSet, v models.GuessDifficulty) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNGuessGame2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessGame(ctx context.Context, sel ast.SelectionSet, v *models.GuessGame) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GuessGame(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGuessGameInfo2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessGameInfo(ctx context.Context, sel ast.SelectionSet, v *models.GuessGameInfo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GuessGameInfo(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNGuessInput2githubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessInput(ctx context.Context, v any) (models.GuessInput, error) {
+	res, err := ec.unmarshalInputGuessInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNGuessRound2ᚕᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessRoundᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.GuessRound) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNGuessRound2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessRound(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNGuessRound2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessRound(ctx context.Context, sel ast.SelectionSet, v *models.GuessRound) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GuessRound(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGuessRoundResult2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessRoundResult(ctx context.Context, sel ast.SelectionSet, v *models.GuessRoundResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GuessRoundResult(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNID2int(ctx context.Context, v any) (int, error) {
@@ -13846,6 +15903,72 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	_ = sel
 	res := graphql.MarshalFloatContext(*v)
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalOGuessDifficulty2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessDifficulty(ctx context.Context, v any) (*models.GuessDifficulty, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(models.GuessDifficulty)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOGuessDifficulty2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessDifficulty(ctx context.Context, sel ast.SelectionSet, v *models.GuessDifficulty) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOGuessGameFilter2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessGameFilter(ctx context.Context, v any) (*models.GuessGameFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputGuessGameFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOGuessRoundResult2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐGuessRoundResult(ctx context.Context, sel ast.SelectionSet, v *models.GuessRoundResult) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._GuessRoundResult(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOID2ᚕintᚄ(ctx context.Context, v any) ([]int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]int, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNID2int(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOID2ᚕintᚄ(ctx context.Context, sel ast.SelectionSet, v []int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2int(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOInt2int64(ctx context.Context, v any) (int64, error) {

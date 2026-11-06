@@ -93,6 +93,22 @@ the expiry of share tokens need an admin (`@isAdmin` in `album.graphql`, `faces.
 `share_token.graphql`). The UI hides those controls from other users (`Sharing.tsx`
 shows them only the copy and add buttons).
 
+### 4D-guesser
+
+A game: the player sees a photo the account can access, pins where it was taken on a map and picks
+the year and month. The API scores each guess (up to 5000 for the place and 5000 for the time, both
+decaying exponentially with the error; the scales come from the difficulty, or for `AUTO` from the
+spread of the photos). Only photos with GPS, a date and a rating of 4+ (by default) are used; videos
+never. Games and rounds have random public ids. People on one account are treated as strangers:
+a game is only reachable by its id, which the browser keeps, and photos are not repeated on a device
+for 30 days. `PHOTOVIEW_DISABLE_4D_GUESSER=1` turns the game off (`siteInfo.guesserEnabled`).
+
+- Fork-only: `api/guessgame/` (scoring and sampling), `api/graphql/models/guess_game.go`,
+  `api/graphql/models/actions/guess_game_actions.go` (and test), `api/graphql/resolvers/guess_game.graphql`,
+  `resolvers/guess_game.go`
+- Hooks: `api/database/database.go` (`GuessGame`, `GuessRound` models), `api/gqlgen.yml` (bindings),
+  `api/utils/environment_variables.go` (`EnvDisable4DGuesser`, `GuesserEnabled`), `api/example.env`
+
 ### Smaller UI changes
 
 - The favorites filter is hidden (`AlbumFilter.tsx`, `TimelineFilters.tsx`).

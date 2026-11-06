@@ -25,6 +25,37 @@ type Coordinates struct {
 	Longitude float64 `json:"longitude"`
 }
 
+// Which photos a 4D-guesser game picks from
+type GuessGameFilter struct {
+	// Only photos rated at least this, clamped to 3-5. Defaults to 4
+	MinRating *int `json:"minRating,omitempty"`
+	// Only photos in these albums or their sub-albums
+	AlbumIds []int `json:"albumIds,omitempty"`
+}
+
+// The photos a game would be picked from
+type GuessGameInfo struct {
+	// How many photos have GPS coordinates and an EXIF date
+	EligibleCount int `json:"eligibleCount"`
+	// Earliest year of the photos, for the year picker
+	MinYear *int `json:"minYear,omitempty"`
+	// Latest year of the photos, for the year picker
+	MaxYear *int `json:"maxYear,omitempty"`
+	// South-west corner of the photos' bounding box, for the initial map view
+	SouthWest *Coordinates `json:"southWest,omitempty"`
+	// North-east corner of the photos' bounding box, for the initial map view
+	NorthEast *Coordinates `json:"northEast,omitempty"`
+}
+
+// A guess for one round
+type GuessInput struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Year      int     `json:"year"`
+	// 1-12
+	Month int `json:"month"`
+}
+
 type MediaDownload struct {
 	// A description of the role of the media file
 	Title    string    `json:"title"`
@@ -106,6 +137,66 @@ type TimelineGroup struct {
 	MediaTotal int `json:"mediaTotal"`
 	// The day shared for all media in this timeline group
 	Date time.Time `json:"date"`
+}
+
+// How fast scores fall with distance. AUTO derives it from the spread of the photos
+type GuessDifficulty string
+
+const (
+	GuessDifficultyAuto   GuessDifficulty = "AUTO"
+	GuessDifficultyCity   GuessDifficulty = "CITY"
+	GuessDifficultyRegion GuessDifficulty = "REGION"
+	GuessDifficultyWorld  GuessDifficulty = "WORLD"
+)
+
+var AllGuessDifficulty = []GuessDifficulty{
+	GuessDifficultyAuto,
+	GuessDifficultyCity,
+	GuessDifficultyRegion,
+	GuessDifficultyWorld,
+}
+
+func (e GuessDifficulty) IsValid() bool {
+	switch e {
+	case GuessDifficultyAuto, GuessDifficultyCity, GuessDifficultyRegion, GuessDifficultyWorld:
+		return true
+	}
+	return false
+}
+
+func (e GuessDifficulty) String() string {
+	return string(e)
+}
+
+func (e *GuessDifficulty) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = GuessDifficulty(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid GuessDifficulty", str)
+	}
+	return nil
+}
+
+func (e GuessDifficulty) MarshalGQL(w io.Writer) {
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *GuessDifficulty) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e GuessDifficulty) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 // Supported language translations of the user interface

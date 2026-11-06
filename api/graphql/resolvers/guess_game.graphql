@@ -1,0 +1,112 @@
+# 4D-guesser: guess where and when (year and month) a photo was taken.
+# Fork-specific: not part of upstream Photoview.
+
+"Which photos a 4D-guesser game picks from"
+input GuessGameFilter {
+  "Only photos rated at least this, clamped to 3-5. Defaults to 4"
+  minRating: Int
+  "Only photos in these albums or their sub-albums"
+  albumIds: [ID!]
+}
+
+"A guess for one round"
+input GuessInput {
+  latitude: Float!
+  longitude: Float!
+  year: Int!
+  "1-12"
+  month: Int!
+}
+
+"How fast scores fall with distance. AUTO derives it from the spread of the photos"
+enum GuessDifficulty {
+  AUTO
+  CITY
+  REGION
+  WORLD
+}
+
+"The photos a game would be picked from"
+type GuessGameInfo {
+  "How many photos have GPS coordinates and an EXIF date"
+  eligibleCount: Int!
+  "Earliest year of the photos, for the year picker"
+  minYear: Int
+  "Latest year of the photos, for the year picker"
+  maxYear: Int
+  "South-west corner of the photos' bounding box, for the initial map view"
+  southWest: Coordinates
+  "North-east corner of the photos' bounding box, for the initial map view"
+  northEast: Coordinates
+}
+
+"One game of the 4D-guesser"
+type GuessGame {
+  "Random id of the game; games are only reachable by it"
+  id: String!
+  createdAt: Time!
+  finishedAt: Time
+  "True when the game was replaced by a newer game on its device, or expired"
+  abandoned: Boolean!
+  difficulty: GuessDifficulty!
+  rounds: [GuessRound!]!
+  totalScore: Int!
+  maxScore: Int!
+}
+
+"One photo of a game"
+type GuessRound {
+  "Random id of the round"
+  id: String!
+  "Position of the round in its game, starting at 0"
+  index: Int!
+  "The photo to guess, null if it was deleted. Do not show its title or path"
+  photo: Media
+  "The guess and its score, null until the round is guessed"
+  result: GuessRoundResult
+}
+
+"The guess of a round, the answer and the score"
+type GuessRoundResult {
+  guess: Coordinates!
+  guessYear: Int!
+  guessMonth: Int!
+  answer: Coordinates!
+  answerYear: Int!
+  answerMonth: Int!
+  distanceKm: Float!
+  monthsOff: Int!
+  locationScore: Int!
+  timeScore: Int!
+  score: Int!
+}
+
+extend type SiteInfo {
+  "Whether the 4D-guesser is enabled, false when PHOTOVIEW_DISABLE_4D_GUESSER is set"
+  guesserEnabled: Boolean!
+}
+
+extend type Query {
+  "Describe the photos a game with this filter would use"
+  guessGameInfo(filter: GuessGameFilter): GuessGameInfo! @isAuthorized
+
+  "Get a game by its id"
+  guessGame(id: String!): GuessGame! @isAuthorized
+}
+
+extend type Mutation {
+  """
+  Start a game. deviceKey is a random id the browser keeps, used to avoid repeating photos.
+  replaceGameId names the device's previous unfinished game, which is then abandoned.
+  """
+  startGuessGame(
+    deviceKey: String!
+    rounds: Int = 5
+    difficulty: GuessDifficulty = AUTO
+    filter: GuessGameFilter
+    replaceGameId: String
+  ): GuessGame! @isAuthorized
+
+  "Guess a round. Guessing an already guessed round returns its stored result"
+  submitGuess(roundId: String!, guess: GuessInput!): GuessRoundResult! @isAuthorized
+}
