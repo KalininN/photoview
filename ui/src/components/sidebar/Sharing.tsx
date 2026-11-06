@@ -32,6 +32,7 @@ import {
   sidebarGetAlbumShares_album_shares,
 } from './__generated__/sidebarGetAlbumShares'
 import { authToken } from '../../helpers/authentication'
+import { useIsAdmin } from '../routes/AuthorizedRoute'
 import { SidebarSection, SidebarSectionTitle } from './SidebarComponents'
 
 import { ReactComponent as LinkIcon } from './icons/shareLinkIcon.svg'
@@ -577,6 +578,8 @@ const SidebarShare = ({
   const { t } = useTranslation()
 
   const query = isPhoto ? SHARE_PHOTO_QUERY : SHARE_ALBUM_QUERY
+  // Fork-specific: deleting a share and its label, password and expiry are admin-only
+  const isAdmin = useIsAdmin()
 
   const [deleteShare] = useMutation<
     sidebareDeleteShare,
@@ -617,16 +620,20 @@ const SidebarShare = ({
         >
           <CopyIcon />
         </button>
-        <button
-          onClick={() => {
-            deleteShare({ variables: { token: share.token } })
-          }}
-          className="align-middle p-1 ml-2 hover:text-red-600 focus:text-red-600"
-          title={t('sidebar.sharing.delete', 'Delete')}
-        >
-          <DeleteIcon />
-        </button>
-        <MorePopover share={share} id={id} query={query} />
+        {isAdmin && (
+          <>
+            <button
+              onClick={() => {
+                deleteShare({ variables: { token: share.token } })
+              }}
+              className="align-middle p-1 ml-2 hover:text-red-600 focus:text-red-600"
+              title={t('sidebar.sharing.delete', 'Delete')}
+            >
+              <DeleteIcon />
+            </button>
+            <MorePopover share={share} id={id} query={query} />
+          </>
+        )}
 
         {/* <ShareItemMoreDropdown share={share} id={id} isPhoto={isPhoto} /> */}
       </td>

@@ -21,6 +21,14 @@ vi.mock('../../helpers/authentication', () => ({
   clearSharePassword: vi.fn(),
 }))
 
+// Fork-specific: the share management controls are admin-only
+let isAdmin = true
+vi.mock('../routes/AuthorizedRoute', () => ({
+  useIsAdmin: () => isAdmin,
+  Authorized: ({ children }: { children: JSX.Element }) => children,
+  default: ({ children }: { children: JSX.Element }) => children,
+}))
+
 // Mock the translation module to prevent interference
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -260,5 +268,29 @@ describe('Sidebar Share Labels', () => {
     expect(
       await screen.findByText('Could not update share label')
     ).toBeInTheDocument()
+  })
+})
+
+describe('Sidebar Sharing for non-admins', () => {
+  test('A non-admin can copy a share link but not manage it', async () => {
+    isAdmin = false
+    try {
+      render(
+        <MockedProvider mocks={[getSharesQueryMock]} addTypename={false}>
+          <SidebarAlbumShare id={MOCK_ALBUM_ID} />
+        </MockedProvider>
+      )
+
+      await waitFor(() =>
+        expect(screen.getByText(/Public Link/i)).toBeInTheDocument()
+      )
+
+      expect(screen.getByTitle('Copy Link')).toBeInTheDocument()
+      expect(screen.getByText('Add shares')).toBeInTheDocument()
+      expect(screen.queryByTitle('Delete')).not.toBeInTheDocument()
+      expect(screen.queryByTitle('More')).not.toBeInTheDocument()
+    } finally {
+      isAdmin = true
+    }
   })
 })
