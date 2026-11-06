@@ -49,6 +49,11 @@ const PersonPage = React.lazy(() =>
   }))
 )
 
+// 4D-guesser, fork-specific
+const GuessGamePage = React.lazy(
+  () => import('../../Pages/GuessGamePage/GuessGamePage')
+)
+
 const Routes = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -93,6 +98,10 @@ const Routes = () => {
     {
       path: '/places',
       element: authorized(<PlacesPage />),
+    },
+    {
+      path: '/4d-guesser',
+      element: authorized(<GuessGamePage />),
     },
     {
       path: '/settings',

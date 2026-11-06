@@ -8,6 +8,16 @@
 //==============================================================
 
 /**
+ * How fast scores fall with distance. AUTO derives it from the spread of the photos
+ */
+export enum GuessDifficulty {
+  AUTO = "AUTO",
+  CITY = "CITY",
+  REGION = "REGION",
+  WORLD = "WORLD",
+}
+
+/**
  * Supported language translations of the user interface
  */
 export enum LanguageTranslation {
@@ -51,6 +61,24 @@ export enum NotificationType {
 export enum OrderDirection {
   ASC = "ASC",
   DESC = "DESC",
+}
+
+/**
+ * Which photos a 4D-guesser game picks from
+ */
+export interface GuessGameFilter {
+  minRating?: number | null;
+  albumIds?: string[] | null;
+}
+
+/**
+ * A guess for one round
+ */
+export interface GuessInput {
+  latitude: number;
+  longitude: number;
+  year: number;
+  month: number;
 }
 
 //==============================================================

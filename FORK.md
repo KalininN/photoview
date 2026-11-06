@@ -108,6 +108,11 @@ for 30 days. `PHOTOVIEW_DISABLE_4D_GUESSER=1` turns the game off (`siteInfo.gues
   `resolvers/guess_game.go`
 - Hooks: `api/database/database.go` (`GuessGame`, `GuessRound` models), `api/gqlgen.yml` (bindings),
   `api/utils/environment_variables.go` (`EnvDisable4DGuesser`, `GuesserEnabled`), `api/example.env`
+- UI, fork-only: `ui/src/Pages/GuessGamePage/` (page at `/4d-guesser`, start screen, photo, map, date picker,
+  reveal, summary; the browser keeps `guess.deviceKey` and `guess.lastGameId` in localStorage). The map
+  needs `MAPBOX_TOKEN`, like Places.
+- UI hooks: `Routes.tsx` (lazy route), `MainMenu.tsx` (button when Mapbox and `guesserEnabled` are on,
+  and its test), `__generated__/globalTypes.ts` (regenerated)
 
 ### Smaller UI changes
 

@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next'
 import { mapboxEnabledQuery } from '../../__generated__/mapboxEnabledQuery'
 import { tailwindClassNames } from '../../helpers/utils'
 import { faceDetectionEnabled } from './__generated__/faceDetectionEnabled'
+import { GUESSER_ENABLED_QUERY } from '../../Pages/GuessGamePage/guessGameQueries'
+import { guesserEnabled } from '../../Pages/GuessGamePage/__generated__/guesserEnabled'
 
 export const MAPBOX_QUERY = gql`
   query mapboxEnabledQuery {
@@ -81,6 +83,11 @@ export const MainMenu = () => {
     ? useQuery<faceDetectionEnabled>(FACE_DETECTION_ENABLED_QUERY)
     : null
 
+  // 4D-guesser, fork-specific
+  const guesserEnabledQuery = authToken()
+    ? useQuery<guesserEnabled>(GUESSER_ENABLED_QUERY)
+    : null
+
   const mapboxEnabled = !!mapboxQuery?.data?.mapboxToken
   const faceDetectionEnabled =
     !!faceDetectionEnabledQuery?.data?.siteInfo?.faceDetectionEnabled
@@ -125,6 +132,21 @@ export const MainMenu = () => {
             icon={
               <svg viewBox="0 0 24 24" fill="white">
                 <path d="M2.4,3.34740684 C2.47896999,3.34740684 2.55617307,3.37078205 2.62188008,3.41458672 L8,7 L8,21 L2.4452998,17.2968665 C2.16710114,17.1114008 2,16.7991694 2,16.4648162 L2,3.74740684 C2,3.52649294 2.1790861,3.34740684 2.4,3.34740684 Z M14.5,3 L14.5,17 L8.5,21 L8.5,7 L14.5,3 Z M15,3 L21.4961389,6.71207939 C21.8077139,6.89012225 22,7.22146569 22,7.58032254 L22,20.3107281 C22,20.531642 21.8209139,20.7107281 21.6,20.7107281 C21.5303892,20.7107281 21.4619835,20.692562 21.4015444,20.6580254 L15,17 L15,3 Z"></path>
+              </svg>
+            }
+          />
+        ) : null}
+        {mapboxEnabled && guesserEnabledQuery?.data?.siteInfo.guesserEnabled ? (
+          <MenuButton
+            to="/4d-guesser"
+            exact
+            label={t('sidemenu.guess_game', '4D-guesser')}
+            background="#b39ef3"
+            activeClasses="ring-[#f3efff] bg-[#f3efff] dark:ring-[#1a1626] dark:bg-[#1a1626]"
+            className="focus:ring-purple-200 dark:focus:ring-[#5b4a8a]"
+            icon={
+              <svg viewBox="0 0 24 24" fill="white" fillRule="evenodd">
+                <path d="M12,2 C15.866,2 19,5.134 19,9 C19,14.25 12,22 12,22 C12,22 5,14.25 5,9 C5,5.134 8.134,2 12,2 Z M12,4.5 C9.515,4.5 7.5,6.515 7.5,9 C7.5,11.485 9.515,13.5 12,13.5 C14.485,13.5 16.5,11.485 16.5,9 C16.5,6.515 14.485,4.5 12,4.5 Z M12.75,6 L12.75,8.25 L14.5,8.25 L14.5,9.75 L11.25,9.75 L11.25,6 Z"></path>
               </svg>
             }
           />
