@@ -168,6 +168,10 @@ var database_models []interface{} = []interface{}{
 	// Face detection
 	&models.FaceGroup{},
 	&models.ImageFace{},
+
+	// 4D-guesser, fork-specific
+	&models.GuessGame{},
+	&models.GuessRound{},
 }
 
 func MigrateDatabase(db *gorm.DB) error {

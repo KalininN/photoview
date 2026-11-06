@@ -44,6 +44,9 @@ const (
 	EnvDisableVideoEncoding      EnvironmentVariable = "PHOTOVIEW_DISABLE_VIDEO_ENCODING"
 	EnvDisableRawProcessing      EnvironmentVariable = "PHOTOVIEW_DISABLE_RAW_PROCESSING"
 	EnvVideoHardwareAcceleration EnvironmentVariable = "PHOTOVIEW_VIDEO_HARDWARE_ACCELERATION"
+
+	// Fork-specific: not part of upstream Photoview.
+	EnvDisable4DGuesser EnvironmentVariable = "PHOTOVIEW_DISABLE_4D_GUESSER"
 )
 
 // GetName returns the name of the environment variable itself
@@ -73,6 +76,14 @@ func (v EnvironmentVariable) GetBool() bool {
 // ShouldServeUI whether or not the "serve ui" option is enabled
 func ShouldServeUI() bool {
 	return EnvServeUI.GetBool()
+}
+
+// GuesserEnabled reports whether the 4D-guesser game is enabled.
+// It is on unless PHOTOVIEW_DISABLE_4D_GUESSER is set to a true value.
+//
+// Fork-specific: not part of upstream Photoview.
+func GuesserEnabled() bool {
+	return !EnvDisable4DGuesser.GetBool()
 }
 
 // DevelopmentMode describes whether or not the server is running in development mode,

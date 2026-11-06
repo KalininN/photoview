@@ -93,6 +93,27 @@ the expiry of share tokens need an admin (`@isAdmin` in `album.graphql`, `faces.
 `share_token.graphql`). The UI hides those controls from other users (`Sharing.tsx`
 shows them only the copy and add buttons).
 
+### 4D-guesser
+
+A game: the player sees a photo the account can access, pins where it was taken on a map and picks
+the year and month. The API scores each guess: up to 5000 for the place, falling off exponentially
+with the distance at a scale set by the difficulty (for `AUTO`, by the spread of the photos), and up
+to 5000 for the time, bell-shaped in the months off so that a year off keeps 90%. Only photos with
+GPS, a date and a rating of 4+ (by default) are used; videos never. Games and rounds have random public ids. People on one account are treated as strangers:
+a game is only reachable by its id, which the browser keeps, and photos are not repeated on a device
+for 30 days. `PHOTOVIEW_DISABLE_4D_GUESSER=1` turns the game off (`siteInfo.guesserEnabled`).
+
+- Fork-only: `api/guessgame/` (scoring and sampling), `api/graphql/models/guess_game.go`,
+  `api/graphql/models/actions/guess_game_actions.go` (and test), `api/graphql/resolvers/guess_game.graphql`,
+  `resolvers/guess_game.go`
+- Hooks: `api/database/database.go` (`GuessGame`, `GuessRound` models), `api/gqlgen.yml` (bindings),
+  `api/utils/environment_variables.go` (`EnvDisable4DGuesser`, `GuesserEnabled`), `api/example.env`
+- UI, fork-only: `ui/src/Pages/GuessGamePage/` (page at `/4d-guesser`, start screen, photo, map, date picker,
+  reveal, summary; the browser keeps `guess.deviceKey` and `guess.lastGameId` in localStorage). The map
+  needs `MAPBOX_TOKEN`, like Places.
+- UI hooks: `Routes.tsx` (lazy route), `MainMenu.tsx` (button when Mapbox and `guesserEnabled` are on,
+  and its test), `__generated__/globalTypes.ts` (regenerated)
+
 ### Smaller UI changes
 
 - The favorites filter is hidden (`AlbumFilter.tsx`, `TimelineFilters.tsx`).

@@ -73,3 +73,24 @@ models:
     model: github.com/photoview/photoview/api/graphql/models.SiteInfo
   MediaType:
     model: github.com/photoview/photoview/api/graphql/models.MediaType
+  # 4D-guesser, fork-specific
+  GuessGame:
+    model: github.com/photoview/photoview/api/graphql/models.GuessGame
+    fields:
+      id:
+        fieldName: PublicID
+      difficulty:
+        resolver: true
+      rounds:
+        resolver: true
+  GuessRound:
+    model: github.com/photoview/photoview/api/graphql/models.GuessRound
+    fields:
+      id:
+        fieldName: PublicID
+      index:
+        fieldName: RoundIndex
+      photo:
+        resolver: true
+  GuessRoundResult:
+    model: github.com/photoview/photoview/api/graphql/models.GuessRoundResult
