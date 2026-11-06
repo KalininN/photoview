@@ -90,8 +90,8 @@ sub-albums' cover. The albums page sorts by title in reverse order by default.
 
 Setting album covers and titles, editing face groups, and deleting, protecting, labelling or setting
 the expiry of share tokens need an admin (`@isAdmin` in `album.graphql`, `faces.graphql`,
-`share_token.graphql`). The UI hides the album and face controls from other users; the share token
-controls in the sharing sidebar are still shown to them, and fail.
+`share_token.graphql`). The UI hides those controls from other users (`Sharing.tsx`
+shows them only the copy and add buttons).
 
 ### Smaller UI changes
 
