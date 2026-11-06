@@ -96,10 +96,10 @@ shows them only the copy and add buttons).
 ### 4D-guesser
 
 A game: the player sees a photo the account can access, pins where it was taken on a map and picks
-the year and month. The API scores each guess (up to 5000 for the place and 5000 for the time, both
-decaying exponentially with the error; the scales come from the difficulty, or for `AUTO` from the
-spread of the photos). Only photos with GPS, a date and a rating of 4+ (by default) are used; videos
-never. Games and rounds have random public ids. People on one account are treated as strangers:
+the year and month. The API scores each guess: up to 5000 for the place, falling off exponentially
+with the distance at a scale set by the difficulty (for `AUTO`, by the spread of the photos), and up
+to 5000 for the time, bell-shaped in the months off so that a year off keeps 90%. Only photos with
+GPS, a date and a rating of 4+ (by default) are used; videos never. Games and rounds have random public ids. People on one account are treated as strangers:
 a game is only reachable by its id, which the browser keeps, and photos are not repeated on a device
 for 30 days. `PHOTOVIEW_DISABLE_4D_GUESSER=1` turns the game off (`siteInfo.guesserEnabled`).
 

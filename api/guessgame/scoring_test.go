@@ -54,27 +54,38 @@ func TestLocationScore(t *testing.T) {
 }
 
 func TestTimeScore(t *testing.T) {
-	scales := Scales{TimeMonths: 12}
+	scales := ScalesFor(DifficultyAuto, nil)
 
 	assert.Equal(t, MaxPartScore, TimeScore(0, scales))
-	assert.Equal(t, 3894, TimeScore(3, scales))
-	assert.Equal(t, 1839, TimeScore(12, scales))
-	assert.Equal(t, 34, TimeScore(60, scales))
+	assert.Equal(t, 4967, TimeScore(3, scales))
+	assert.Equal(t, 4870, TimeScore(6, scales))
+	assert.Equal(t, 4501, TimeScore(12, scales), "a year off keeps 90%")
+	assert.Equal(t, 3283, TimeScore(24, scales))
+	assert.Equal(t, 1940, TimeScore(36, scales))
+	assert.Equal(t, 361, TimeScore(60, scales))
+	assert.Equal(t, 0, TimeScore(240, scales))
+
+	previous := MaxPartScore
+	for months := range 300 {
+		score := TimeScore(months, scales)
+		assert.LessOrEqual(t, score, previous, "falls monotonically at %d months", months)
+		previous = score
+	}
 
 	assert.Equal(t, MaxPartScore, TimeScore(0, Scales{}), "zero scale only rewards exact answers")
 	assert.Equal(t, 0, TimeScore(1, Scales{}))
 }
 
 func TestScalesFor(t *testing.T) {
-	assert.Equal(t, Scales{DistanceKm: 15, TimeMonths: 12}, ScalesFor(DifficultyCity, nil))
-	assert.Equal(t, Scales{DistanceKm: 1500, TimeMonths: 12}, ScalesFor(DifficultyWorld, nil))
+	assert.Equal(t, Scales{DistanceKm: 15, TimeMonths: 37}, ScalesFor(DifficultyCity, nil))
+	assert.Equal(t, Scales{DistanceKm: 1500, TimeMonths: 37}, ScalesFor(DifficultyWorld, nil))
 	assert.Equal(t, AutoScales(nil), ScalesFor(DifficultyAuto, nil))
 	assert.Equal(t, AutoScales(nil), ScalesFor("unknown", nil))
 }
 
 func TestAutoScales(t *testing.T) {
 	t.Run("empty pool", func(t *testing.T) {
-		assert.Equal(t, Scales{DistanceKm: 1500, TimeMonths: 12}, AutoScales(nil))
+		assert.Equal(t, Scales{DistanceKm: 1500, TimeMonths: 37}, AutoScales(nil))
 	})
 
 	t.Run("one city over two years", func(t *testing.T) {
@@ -86,7 +97,7 @@ func TestAutoScales(t *testing.T) {
 		}
 		scales := AutoScales(pool)
 		assert.Equal(t, 5.0, scales.DistanceKm, "clamped to the 5 km floor")
-		assert.InDelta(t, 3.0, scales.TimeMonths, 1e-9, "24 months / 10, clamped to 3")
+		assert.Equal(t, 37.0, scales.TimeMonths, "the time scale does not depend on the pool")
 	})
 
 	t.Run("world over twenty years", func(t *testing.T) {
@@ -99,6 +110,6 @@ func TestAutoScales(t *testing.T) {
 		}
 		scales := AutoScales(pool)
 		assert.Equal(t, 1500.0, scales.DistanceKm, "clamped to the 1,500 km ceiling")
-		assert.Equal(t, 24.0, scales.TimeMonths)
+		assert.Equal(t, 37.0, scales.TimeMonths)
 	})
 }

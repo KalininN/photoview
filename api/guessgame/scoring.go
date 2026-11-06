@@ -37,7 +37,9 @@ const (
 	DifficultyWorld  Difficulty = "WORLD"
 )
 
-const defaultTimeScaleMonths = 12
+// defaultTimeScaleMonths is T₀ for every difficulty. With the bell-shaped time score
+// a year off keeps 90% (4,500 points), 3 years off about 1,900 and 5 years off about 360.
+const defaultTimeScaleMonths = 37
 
 var presetScales = map[Difficulty]Scales{
 	DifficultyCity:   {DistanceKm: 15, TimeMonths: defaultTimeScaleMonths},
@@ -81,9 +83,14 @@ func LocationScore(distanceKm float64, scales Scales) int {
 	return decay(distanceKm, scales.DistanceKm)
 }
 
-// TimeScore scores a guess that is monthsOff months away from the answer.
+// TimeScore scores a guess that is monthsOff months away from the answer, as
+// 5000·e^(−(monthsOff/T₀)²): close guesses lose little, far ones fall off quickly.
 func TimeScore(monthsOff int, scales Scales) int {
-	return decay(float64(monthsOff), scales.TimeMonths)
+	if scales.TimeMonths <= 0 {
+		return decay(float64(monthsOff), 0)
+	}
+	ratio := float64(monthsOff) / scales.TimeMonths
+	return int(math.Round(MaxPartScore * math.Exp(-ratio*ratio)))
 }
 
 func decay(value, scale float64) int {
@@ -105,9 +112,9 @@ func ScalesFor(difficulty Difficulty, pool []Point) Scales {
 	return AutoScales(pool)
 }
 
-// AutoScales derives scales from the spread of a photo pool:
-// D₀ is a quarter of the 90th-percentile distance from the pool's median point, clamped to 5-1,500 km;
-// T₀ is a tenth of the pool's date span, clamped to 3-36 months.
+// AutoScales derives the distance scale from the spread of a photo pool:
+// D₀ is a quarter of the 90th-percentile distance from the pool's median point, clamped to 5-1,500 km.
+// T₀ is the same for every pool, defaultTimeScaleMonths.
 func AutoScales(pool []Point) Scales {
 	scales := Scales{DistanceKm: 1500, TimeMonths: defaultTimeScaleMonths}
 	if len(pool) == 0 {
@@ -116,13 +123,9 @@ func AutoScales(pool []Point) Scales {
 
 	lats := make([]float64, len(pool))
 	lons := make([]float64, len(pool))
-	minMonth, maxMonth := math.MaxInt, math.MinInt
 	for i, p := range pool {
 		lats[i] = p.Latitude
 		lons[i] = p.Longitude
-		m := 12*p.Year + p.Month - 1
-		minMonth = min(minMonth, m)
-		maxMonth = max(maxMonth, m)
 	}
 	medianLat, medianLon := median(lats), median(lons)
 
@@ -134,7 +137,6 @@ func AutoScales(pool []Point) Scales {
 	p90 := distances[(len(distances)-1)*9/10]
 
 	scales.DistanceKm = clamp(p90/4, 5, 1500)
-	scales.TimeMonths = clamp(float64(maxMonth-minMonth)/10, 3, 36)
 	return scales
 }
 

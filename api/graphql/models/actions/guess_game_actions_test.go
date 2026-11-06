@@ -216,7 +216,7 @@ func TestStartGuessGame(t *testing.T) {
 		assert.Equal(t, 4, game.RoundCount)
 		assert.Equal(t, 40000, game.MaxScore())
 		assert.Equal(t, string(models.GuessDifficultyRegion), game.Difficulty)
-		assert.Equal(t, guessgame.Scales{DistanceKm: 150, TimeMonths: 12}, game.Scales())
+		assert.Equal(t, guessgame.Scales{DistanceKm: 150, TimeMonths: 37}, game.Scales())
 		assert.Equal(t, 4, game.MinRating)
 
 		rounds := guessRounds(t, db, game)
@@ -363,7 +363,7 @@ func TestSubmitGuess(t *testing.T) {
 		assert.InDelta(t, 111.2, result.DistanceKm, 0.5)
 		assert.Equal(t, 12, result.MonthsOff)
 		assert.Equal(t, guessgame.LocationScore(result.DistanceKm, game.Scales()), result.LocationScore)
-		assert.Equal(t, 1839, result.TimeScore)
+		assert.Equal(t, 4501, result.TimeScore, "a year off keeps 90%")
 		assert.Equal(t, result.LocationScore+result.TimeScore, result.Score)
 		assert.Equal(t, guess.Latitude, result.Guess.Latitude)
 		assert.Equal(t, rounds[1].AnswerLatitude, result.Answer.Latitude)
