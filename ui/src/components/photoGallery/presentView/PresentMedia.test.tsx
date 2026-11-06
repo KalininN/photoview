@@ -14,6 +14,7 @@ test('render present image', () => {
     blurhash: null,
     videoWeb: null,
     favorite: false,
+    likes: 0,
     thumbnail: {
       __typename: 'MediaURL',
       url: '/sample_image.jpg',
@@ -41,6 +42,7 @@ test('render present video', () => {
     highRes: null,
     blurhash: null,
     favorite: false,
+    likes: 0,
     videoWeb: {
       __typename: 'MediaURL',
       url: '/sample_video.mp4',

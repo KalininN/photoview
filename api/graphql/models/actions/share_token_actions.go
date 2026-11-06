@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func AddMediaShare(db *gorm.DB, user *models.User, mediaID int, expire *time.Time, password *string) (*models.ShareToken,
+func AddMediaShare(db *gorm.DB, user *models.User, mediaID int, expire *time.Time, password *string, label *string) (*models.ShareToken,
 	error) {
 
 	var media models.Media
@@ -37,6 +37,8 @@ func AddMediaShare(db *gorm.DB, user *models.User, mediaID int, expire *time.Tim
 		}
 	}
 
+	label = utils.SanitizeShareLabel(label)
+
 	hashedPassword, err := hashSharePassword(password)
 	if err != nil {
 		return nil, err
@@ -45,6 +47,7 @@ func AddMediaShare(db *gorm.DB, user *models.User, mediaID int, expire *time.Tim
 	shareToken := models.ShareToken{
 		Value:    utils.GenerateToken(),
 		OwnerID:  user.ID,
+		Label:    label,
 		Expire:   expire,
 		Password: hashedPassword,
 		AlbumID:  nil,
@@ -58,12 +61,13 @@ func AddMediaShare(db *gorm.DB, user *models.User, mediaID int, expire *time.Tim
 	return &shareToken, nil
 }
 
-func AddAlbumShare(db *gorm.DB, user *models.User, albumID int, expire *time.Time, password *string) (*models.ShareToken,
+func AddAlbumShare(db *gorm.DB, user *models.User, albumID int, expire *time.Time, password *string, label *string) (*models.ShareToken,
 	error) {
 
 	var count int64
 	err := db.
 		Model(&models.Album{}).
+		Where("albums.id = ?", albumID).
 		Where("EXISTS (SELECT * FROM user_albums WHERE user_albums.album_id = albums.id AND user_albums.user_id = ?)",
 			user.ID).
 		Count(&count).Error
@@ -75,6 +79,8 @@ func AddAlbumShare(db *gorm.DB, user *models.User, albumID int, expire *time.Tim
 	if count == 0 {
 		return nil, auth.ErrUnauthorized
 	}
+
+	label = utils.SanitizeShareLabel(label)
 
 	var hashedPassword *string = nil
 	if password != nil {
@@ -89,6 +95,7 @@ func AddAlbumShare(db *gorm.DB, user *models.User, albumID int, expire *time.Tim
 	shareToken := models.ShareToken{
 		Value:    utils.GenerateToken(),
 		OwnerID:  user.ID,
+		Label:    label,
 		Expire:   expire,
 		Password: hashedPassword,
 		AlbumID:  &albumID,
@@ -102,8 +109,40 @@ func AddAlbumShare(db *gorm.DB, user *models.User, albumID int, expire *time.Tim
 	return &shareToken, nil
 }
 
-func DeleteShareToken(db *gorm.DB, userID int, tokenValue string) (*models.ShareToken, error) {
-	token, err := getUserToken(db, userID, tokenValue)
+// ListAlbumShares returns share tokens for an album.
+//
+// Share-token callers (user == nil) and unrelated users get an empty list so a
+// valid album token cannot disclose sibling token values. Album owners and
+// administrators still receive every token for token management.
+func ListAlbumShares(db *gorm.DB, user *models.User, albumID int) ([]*models.ShareToken, error) {
+	if user == nil {
+		return []*models.ShareToken{}, nil
+	}
+	if !user.Admin {
+		var count int64
+		err := db.
+			Model(&models.Album{}).
+			Where("albums.id = ?", albumID).
+			Where("EXISTS (SELECT * FROM user_albums WHERE user_albums.album_id = albums.id AND user_albums.user_id = ?)",
+				user.ID).
+			Count(&count).Error
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to validate album owner with database")
+		}
+		if count == 0 {
+			return []*models.ShareToken{}, nil
+		}
+	}
+
+	var shareTokens []*models.ShareToken
+	if err := db.Where("album_id = ?", albumID).Find(&shareTokens).Error; err != nil {
+		return nil, errors.Wrap(err, "failed to list album share tokens")
+	}
+	return shareTokens, nil
+}
+
+func DeleteShareToken(db *gorm.DB, user *models.User, tokenValue string) (*models.ShareToken, error) {
+	token, err := getUserToken(db, user, tokenValue)
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +154,8 @@ func DeleteShareToken(db *gorm.DB, userID int, tokenValue string) (*models.Share
 	return token, nil
 }
 
-func ProtectShareToken(db *gorm.DB, userID int, tokenValue string, password *string) (*models.ShareToken, error) {
-	token, err := getUserToken(db, userID, tokenValue)
+func ProtectShareToken(db *gorm.DB, user *models.User, tokenValue string, password *string) (*models.ShareToken, error) {
+	token, err := getUserToken(db, user, tokenValue)
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +169,36 @@ func ProtectShareToken(db *gorm.DB, userID int, tokenValue string, password *str
 
 	if err := db.Save(&token).Error; err != nil {
 		return nil, errors.Wrap(err, "failed to update password for share token")
+	}
+
+	return token, nil
+}
+
+func SetExpireShareToken(db *gorm.DB, user *models.User, tokenValue string, expire *time.Time) (*models.ShareToken, error) {
+	token, err := getUserToken(db, user, tokenValue)
+	if err != nil {
+		return nil, err
+	}
+
+	token.Expire = expire
+
+	if err := db.Save(&token).Error; err != nil {
+		return nil, errors.Wrap(err, "failed to update the expiration date for share token")
+	}
+
+	return token, nil
+}
+
+func SetShareTokenLabel(db *gorm.DB, user *models.User, tokenValue string, label *string) (*models.ShareToken, error) {
+	token, err := getUserToken(db, user, tokenValue)
+	if err != nil {
+		return nil, err
+	}
+
+	token.Label = utils.SanitizeShareLabel(label)
+
+	if err := db.Save(&token).Error; err != nil {
+		return nil, errors.Wrap(err, "failed to update label for share token")
 	}
 
 	return token, nil
@@ -149,17 +218,13 @@ func hashSharePassword(password *string) (*string, error) {
 	return hashedPassword, nil
 }
 
-func getUserToken(db *gorm.DB, userID int, tokenValue string) (*models.ShareToken, error) {
-
-	var query string
-	if drivers.POSTGRES.MatchDatabase(db) {
-		query = "\"Owner\".id = ? OR \"Owner\".admin = TRUE"
-	} else {
-		query = "Owner.id = ? OR Owner.admin = TRUE"
-	}
-
+func getUserToken(db *gorm.DB, user *models.User, tokenValue string) (*models.ShareToken, error) {
 	var token models.ShareToken
-	err := db.Where("share_tokens.value = ?", tokenValue).Joins("Owner").Where(query, userID).First(&token).Error
+	query := db.Where("share_tokens.value = ?", tokenValue)
+	if !user.Admin {
+		query = query.Where("share_tokens.owner_id = ?", user.ID)
+	}
+	err := query.First(&token).Error
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get user share token from database")

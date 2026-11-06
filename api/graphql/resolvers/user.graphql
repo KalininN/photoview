@@ -26,7 +26,9 @@ enum LanguageTranslation {
   SimplifiedChinese,
   Portuguese,
   Basque,
-  Turkish
+  Turkish,
+  Japanese,
+  Dutch,
 }
 
 "Preferences for regular users"
@@ -79,6 +81,7 @@ extend type Mutation {
     username: String!
     password: String
     admin: Boolean!
+    rootPath: String
   ): User! @isAdmin
   "Delete an existing user"
   deleteUser(id: ID!): User! @isAdmin

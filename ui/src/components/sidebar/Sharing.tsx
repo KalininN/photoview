@@ -46,6 +46,13 @@ import {
   sidebarProtectShare,
   sidebarProtectShareVariables,
 } from './__generated__/sidebarProtectShare'
+import {
+  sidebarSetShareTokenLabel,
+  sidebarSetShareTokenLabelVariables,
+} from './__generated__/sidebarSetShareTokenLabel'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import dayjs from 'dayjs'
 
 const SHARE_PHOTO_QUERY = gql`
   query sidebarGetPhotoShares($id: ID!) {
@@ -54,20 +61,24 @@ const SHARE_PHOTO_QUERY = gql`
       shares {
         id
         token
+        label
         hasPassword
+        expire
       }
     }
   }
 `
 
-const SHARE_ALBUM_QUERY = gql`
+export const SHARE_ALBUM_QUERY = gql`
   query sidebarGetAlbumShares($id: ID!) {
     album(id: $id) {
       id
       shares {
         id
         token
+        label
         hasPassword
+        expire
       }
     }
   }
@@ -94,6 +105,23 @@ const PROTECT_SHARE_MUTATION = gql`
     protectShareToken(token: $token, password: $password) {
       token
       hasPassword
+    }
+  }
+`
+
+export const SET_SHARE_LABEL_MUTATION = gql`
+  mutation sidebarSetShareTokenLabel($token: String!, $label: String) {
+    setShareTokenLabel(token: $token, label: $label) {
+      token
+      label
+    }
+  }
+`
+
+export const SET_EXPIRE_MUTATION = gql`
+  mutation sidebarSetExpireShare($token: String!, $expire: Time) {
+    setExpireShareToken(token: $token, expire: $expire) {
+      token
     }
   }
 `
@@ -145,6 +173,67 @@ type MorePopoverSectionPasswordProps = {
   share: sidebarGetAlbumShares_album_shares
   query: DocumentNode
   id: string
+}
+
+type MorePopoverSectionLabelProps = {
+  share: sidebarGetAlbumShares_album_shares
+  query: DocumentNode
+  id: string
+}
+
+const MorePopoverSectionLabel = ({
+  share,
+  query,
+  id,
+}: MorePopoverSectionLabelProps) => {
+  const { t } = useTranslation()
+  const [label, setLabel] = useState(share.label ?? '')
+
+  useEffect(() => {
+    setLabel(share.label ?? '')
+  }, [share.label])
+
+  const [setShareLabel, { loading, error }] = useMutation<
+    sidebarSetShareTokenLabel,
+    sidebarSetShareTokenLabelVariables
+  >(SET_SHARE_LABEL_MUTATION, {
+    refetchQueries: [{ query, variables: { id } }],
+    onError: () => undefined,
+  })
+
+  const submit = () => {
+    setShareLabel({
+      variables: {
+        token: share.token,
+        label: label.trim() || null,
+      },
+    })
+  }
+
+  return (
+    <div className="px-4 py-2">
+      <TextField
+        label={t('sidebar.sharing.share_label', 'Share label')}
+        placeholder={t(
+          'sidebar.sharing.share_label_placeholder',
+          'Family, client, website...'
+        )}
+        value={label}
+        error={
+          error
+            ? t(
+                'sidebar.sharing.share_label_update_error',
+                'Could not update share label'
+              )
+            : undefined
+        }
+        fullWidth
+        action={submit}
+        loading={loading}
+        onChange={event => setLabel(event.target.value)}
+      />
+    </div>
+  )
 }
 
 const MorePopoverSectionPassword = ({
@@ -222,7 +311,8 @@ const MorePopoverSectionPassword = ({
         disabled={!activated}
         type={passwordHidden ? 'password' : 'text'}
         value={passwordInputValue}
-        className="mt-2 w-full"
+        className="w-full"
+        wrapperClassName="mt-2"
         onKeyDown={event => {
           if (
             event.shiftKey ||
@@ -248,6 +338,103 @@ const MorePopoverSectionPassword = ({
   )
 }
 
+type MorePopoverSectionExpirationProps = {
+  share: sidebarGetAlbumShares_album_shares
+  id: string
+  query: DocumentNode
+}
+
+const MorePopoverSectionExpiration = ({
+  share,
+  id,
+  query,
+}: MorePopoverSectionExpirationProps) => {
+  // Verify whether the backend response includes an expiration time
+  // Set it to true if share.expire exists; otherwise,set it to false
+  const [enabled, setEnabled] = useState(!!share.expire)
+  useEffect(() => {
+    setEnabled(!!share.expire)
+    setDate(share.expire ? new Date(share.expire) : null)
+  }, [share.expire])
+  const { t, i18n } = useTranslation()
+
+  const dateFormatterOptions: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }
+  const dateFormatter = new Intl.DateTimeFormat(
+    i18n.language,
+    dateFormatterOptions
+  )
+  const oldExpireDate = share.expire
+    ? dateFormatter.format(
+        new Date(share.expire.slice(0, 19).replace(' ', 'T'))
+      )
+    : ''
+
+  const [date, setDate] = useState<Date | null>(
+    share.expire ? new Date(share.expire) : null
+  )
+
+  const [setExpire, { loading }] = useMutation(SET_EXPIRE_MUTATION, {
+    refetchQueries: [{ query, variables: { id } }],
+  })
+
+  const submit = () => {
+    if (!date && enabled) return
+    const formatDate = date
+      ? dayjs(date).endOf('day').format('YYYY-MM-DDTHH:mm:ss') + 'Z'
+      : null
+    //Save the local time while treating it as UTC.
+    setExpire({
+      variables: {
+        token: share.token,
+        expire: formatDate,
+      },
+    })
+  }
+
+  return (
+    <div className="px-4 py-2">
+      <Checkbox
+        label={t('sidebar.sharing.expiration_date', 'Expiration date')}
+        checked={enabled}
+        onChange={() => {
+          const next = !enabled
+          setEnabled(next)
+
+          if (!next) {
+            // If the checkbox is unchecked,set the expiration time to null.
+            setDate(null)
+            setExpire({
+              variables: {
+                token: share.token,
+                expire: null,
+              },
+            })
+          }
+        }}
+      />
+
+      {enabled && (
+        <div className="mt-2 w-full">
+          <DatePicker
+            selected={date}
+            onChange={setDate}
+            minDate={new Date()}
+            placeholderText={oldExpireDate}
+            value={oldExpireDate}
+            customInput={
+              <TextField fullWidth action={submit} loading={loading} />
+            }
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 type MorePopoverProps = {
   id: string
   query: DocumentNode
@@ -268,11 +455,9 @@ const MorePopover = ({ id, share, query }: MorePopoverProps) => {
 
       <Popover.Panel>
         <ArrowPopoverPanel width={260}>
+          <MorePopoverSectionLabel id={id} share={share} query={query} />
           <MorePopoverSectionPassword id={id} share={share} query={query} />
-          <div className="px-4 py-2 border-t border-gray-200 dark:border-dark-border mt-2 mb-2">
-            <Checkbox label="Expiration date" />
-            <TextField className="mt-2 w-full" />
-          </div>
+          <MorePopoverSectionExpiration id={id} share={share} query={query} />
         </ArrowPopoverPanel>
       </Popover.Panel>
     </Popover>
@@ -351,7 +536,7 @@ export const SidebarPhotoShare = ({ id }: SidebarSharePhotoProps) => {
         },
       })
     }
-  }, [])
+  }, [id])
 
   const loading = queryLoading || mutationLoading
 
@@ -410,13 +595,17 @@ const SidebarShare = ({
       className="border-gray-100 dark:border-dark-border2 border-b border-t"
     >
       <td className="pl-4 py-2 w-full">
-        <span className="text-[#585858] dark:text-[#C0C3C4] mr-2">
-          <LinkIcon className="inline-block mr-2" />
-          <span className="text-xs uppercase font-bold">
-            {t('sidebar.sharing.public_link', 'Public Link') + ' '}
+        <span className="text-[#585858] dark:text-[#C0C3C4] mr-2 flex items-center">
+          <LinkIcon className="mr-2 shrink-0" />
+          <span className="text-xs font-bold">
+            {share.label || (
+              <span className="uppercase">
+                {t('sidebar.sharing.public_link', 'Public Link') + ' '}
+              </span>
+            )}
           </span>
         </span>
-        <span className="text-sm">{share.token}</span>
+        <span className="text-sm break-all block ml-6">{share.token}</span>
       </td>
       <td className="pr-6 py-2 whitespace-nowrap text-[#5C6A7F] dark:text-[#7599ca] flex">
         <button

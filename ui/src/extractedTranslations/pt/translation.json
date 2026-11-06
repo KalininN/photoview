@@ -1,8 +1,13 @@
 {
   "album_filter": {
     "only_favorites": "Mostrar apenas os favoritos",
+    "order_direction": {
+      "ascending": "Ascendente",
+      "descending": "Decrescente"
+    },
     "sort": "Ordenar",
     "sort_by": "Ordenado por",
+    "sort_direction": "Sentido da ordenação",
     "sorting_options": {
       "date_imported": "Data de importação",
       "date_shot": "Data da foto",
@@ -178,11 +183,11 @@
     },
     "users": {
       "add_user": {
-        "submit": "Adiiconar utilizador"
+        "submit": "Adicionar utilizador"
       },
       "confirm_delete_user": {
         "action": "Apagar {{user}}",
-        "description": "<0>Tem a certeza que pretende aapagar <1></1>?</0><p>Esta ação não pode ser desfeita</p>",
+        "description": "<0>Tem a certeza de que pretende apagar <1></1>?</0><p>Esta ação não pode ser desfeita.</p>",
         "title": "Apagar utilizador"
       },
       "password_reset": {
@@ -342,9 +347,13 @@
       "add_share": "Adicionar partilha",
       "copy_link": "Copiar link",
       "delete": "Eliminar",
+      "expiration_date": "",
       "more": "Mais",
       "no_shares_found": "Não foram encontradas partilhas",
       "public_link": "Link público",
+      "share_label": "",
+      "share_label_placeholder": "",
+      "share_label_update_error": "",
       "title": "Opções de partilha"
     }
   },

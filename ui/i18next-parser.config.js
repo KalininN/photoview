@@ -1,6 +1,6 @@
 module.exports = {
   defaultValue: function (locale, namespace, key, value) {
-    if (locale != 'en'){
+    if (locale != 'en') {
       return '';
     }
     return value || key;
@@ -13,10 +13,13 @@ module.exports = {
     'es',
     'fr',
     'it',
+    'ja',
+    'nl',
     'pl',
     'pt',
     'ru',
     'sv',
+    'uk',
     'zh-CN',
     'zh-HK',
     'zh-TW',
